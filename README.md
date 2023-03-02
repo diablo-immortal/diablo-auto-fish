@@ -21,7 +21,7 @@ python -m pip install -r requirements.txt
 ```
 
 #### Start fishing
-- 显示器分辨率设置为1920\*1080，游戏以英文版运行，画质全部调为最低的选项；
+- 显示器分辨率设置为1920\*1080，游戏以英文版运行，全屏模式，画质全部调为最低的选项；
 - 按键设置：
   - 移动/攻击：鼠标中键
   - 钓鱼技能：鼠标右键
@@ -29,7 +29,7 @@ python -m pip install -r requirements.txt
 - 站在钓鱼点，npc不要离得太近也不要太远，最好在可以对话的最远距离；
 - 打开控制台，确保路径正确，运行 `python fishing.py`。
 
-- Diablo Immortal must be running at 1920\*1080 resolution, ***full screen**, at the lowest possible graphic settings.
+- Diablo Immortal must be running at 1920\*1080 resolution, **full screen**, at the lowest possible graphic settings.
 - Set key bindings: 
   - Move/Attack: Mouse Middle button
   - Fishing Skills: Mouse right (secondary) button

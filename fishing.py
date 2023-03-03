@@ -41,7 +41,7 @@ FISH_TYPE_COLOR = (125, 125, 120)
 FISH_TYPE_X_COORD_TOLERANCE = 100
 
 if sys.platform == 'darwin':
-    FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1048}
+    FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1050}
     FISH_TYPE_Y_COORD = 137
     MAX_FISHING_TIME = 20
     MAX_TIMEOUT = 2
@@ -75,6 +75,7 @@ else:
     FISH_TYPE_Y_COORD = 75
     MAX_FISHING_TIME = 40
     MAX_TIMEOUT = 5
+    PICKUP_LIMIT = 10
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
 
     window = p.getWindowsWithTitle("Diablo Immortal")[0]
@@ -147,7 +148,7 @@ def pull():
         n_offset = 8  # backward offset after finding n_dark consecutive dark pixels
         lb_range = 150
         ub_range = 350
-        lb_right_end = 600
+        lb_right_end = 650
         amount_pull = 80  # amount of position change for each pull
     
     else:
@@ -158,7 +159,7 @@ def pull():
         n_offset = 7  # backward offset after finding n_dark consecutive dark pixels
         lb_range = 130
         ub_range = 300
-        lb_right_end = 515
+        lb_right_end = 600
         amount_pull = 65  # amount of position change for each pull
 
     # t1 = time.time()
@@ -181,7 +182,7 @@ def pull():
             break
         j += next_dark[-1] + 1
     if current is None or current < 0 or bounds.shape[0] == 0:
-        return 1
+        return None
     # t3 = time.time()
     # print(t1-t0, t2-t1, t3-t2)
 
@@ -194,18 +195,25 @@ def pull():
             else:
                 click_box(boxes[READY])
             # p.sleep(random.random()*0.03)
-        elif current < bounds[0]:
+        elif bound_range < 10:
+            pull_count = (bar_g.shape[0] - current) // amount_pull
             if sys.platform == "darwin":
-                p.write('n' * ((bounds[-1] - current) // amount_pull))
+                p.write('n' * pull_count)
             else:
-                click_box(boxes[READY], (bounds[-1] - current) // amount_pull)
+                click_box(boxes[READY], pull_count)
+        elif current < bounds[0]:
+            pull_count = (bounds[-1] - current) // amount_pull
+            if sys.platform == "darwin":
+                p.write('n' * pull_count)
+            else:
+                click_box(boxes[READY], pull_count)
             # for _ in range((bounds[-1] - current) // 100 + 1):
             #     p.press('n')
             #     p.sleep(random.random()*0.03)
         else:
             p.sleep(random.random()*0.03)
-        return 0
-    return 1
+        return bound_range
+    return None
 
 
 def check_status(prev_status, fish_type="yellow"):
@@ -278,20 +286,19 @@ def check(status, confidence=0.9, region_boarder=10):
 
 def fish(fish_type="yellow"):
     prev_status = ''
-    fish_obtained = 0
-    while fish_obtained < 30:
+    pickup_attempted = 0
+    fishing_attempted = 0
+    while fishing_attempted < 30:
         status, box = check_status(prev_status, fish_type)
         if not status:
             continue
         if status == PULLING:
             t = time.time()
-            bar_or_bounds_not_found_count = 0
-            while time.time() - t < 20 and bar_or_bounds_not_found_count < 30:
-                bar_or_bounds_not_found_count += pull()
+            bar_or_bounds_not_found_time = time.time()
+            while time.time() - t < MAX_FISHING_TIME and bar_or_bounds_not_found_time < MAX_TIMEOUT:
+                if pull():  # successful pull
+                    bar_or_bounds_not_found_time = time.time()
             continue
-
-        # x = box.left/2 + random.random() * box.width/2
-        # y = box.top/2 + random.random() * box.height/2
 
         if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR:
             activate_diablo(sys.platform)
@@ -311,9 +318,9 @@ def fish(fish_type="yellow"):
             else:
                 click_box(box, button=p.SECONDARY)
             # p.click(x, y)
-            fish_obtained += 1
-            p.sleep(0.5)
-            print(f"number of fish attempts: {fish_obtained}")
+            fishing_attempted += 1
+            p.sleep(1)
+            print(f"number of fishing attempts: {fishing_attempted}")
         elif status == READY:
             activate_diablo(sys.platform)
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
@@ -326,9 +333,14 @@ def fish(fish_type="yellow"):
             status = PULLING
             t = time.time()
             bar_or_bounds_not_found_time = time.time()
-            while time.time() - t < 20 and time.time() - bar_or_bounds_not_found_time < 2:
-                if pull() == 0:  # successful pull
+            while time.time() - t < MAX_FISHING_TIME and time.time() - bar_or_bounds_not_found_time < MAX_TIMEOUT:
+                if pull():  # successful pull
                     bar_or_bounds_not_found_time = time.time()
+        elif status == WAITING and sys.platform == "win32" and pickup_attempted < PICKUP_LIMIT:
+            if pickup_win32(pickup_attempted):
+                pickup_attempted += 1
+            else:
+                pickup_attempted = 10
         prev_status = status
 
 
@@ -403,7 +415,7 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
 def trade_fish():
     print("selling fish to npc...")
     p.press('space')
-    p.sleep(0.5)
+    p.sleep(1)
     p.click(x0//2 + 850, y0//2 + 540)
     p.sleep(0.5)
     p.click(x0//2 + 530, y0//2 + 660)
@@ -412,13 +424,13 @@ def trade_fish():
     p.sleep(0.2)
     p.click(x0//2 + 1010, y0//2 + 170)
     p.sleep(15)
-    walk('w', 0.01)
+    walk('w', 0.2)
 
 
 def buy_bait():
     print("buying baits...")
     p.press('space')
-    p.sleep(0.5)
+    p.sleep(1)
     p.click(x0//2 + 840, y0//2 + 600)
     p.sleep(1)
     p.click(x0//2 + 890, y0//2 + 600)
@@ -450,6 +462,7 @@ def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confide
 
 def trade_with_gui(attempts_trade=3, attempts_sell=3):
     if attempts_trade > 0:
+        p.sleep(1)
         print("selling based on gui")
         position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
         if not position:
@@ -474,8 +487,6 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
             return trade_with_gui(0)
     elif attempts_sell > 0:
         p.sleep(15)
-        p.middleClick(window.center)
-        p.sleep(1)
         print("buying baits...")
         while True:
             for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY]:
@@ -499,6 +510,49 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
     return 0
 
 
+def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
+    print(f"start picking items, attempt #{attempted + 1}")
+
+    blue_rgb = np.array([89, 96, 241])
+    yellow_rgb = np.array([233, 231, 77])
+    orange_rgb = np.array([243, 143, 36])
+    color_threshold = 5
+    min_y_offset = 30
+    max_y_offset = 150
+    click_span = 120
+    click_flex = 30
+    region = (470, 240, 980, 600)
+    im = p.screenshot("temp_im/items_check.png", region=region)
+    if pickup_blue:
+        pts = np.argwhere((np.abs(np.array(im)[:, :, :3] - blue_rgb) <= color_threshold).all(axis=2) |
+                          (np.abs(np.array(im)[:, :, :3] - yellow_rgb) <= color_threshold).all(axis=2) |
+                          (np.abs(np.array(im)[:, :, :3] - orange_rgb) <= color_threshold).all(axis=2))
+    else:
+        pts = np.argwhere((np.abs(np.array(im)[:, :, :3] - yellow_rgb) <= color_threshold).all(axis=2) |
+                          (np.abs(np.array(im)[:, :, :3] - blue_rgb) <= color_threshold).all(axis=2))
+    if pts.shape[0] == 0:
+        return False
+    top_left = pts.min(axis=0)
+    height_width = pts.max(axis=0) - top_left
+    click_region = (region[0] + top_left[1],            region[1] + top_left[0] + min_y_offset,
+                    height_width[1],                    height_width[0] + max_y_offset - min_y_offset)
+    for j in range(1, click_region[3] // click_span):
+        y = int(click_region[1] + click_span * j + (random.random() - 0.5) * click_flex)
+        for i in range(1, click_region[2] // click_span):
+            x = int(click_region[0] + click_span * i + (random.random() - 0.5) * click_flex)
+            p.click(x, y)
+            p.sleep(0.1)
+    if legendary_alarm and attempted >= PICKUP_LIMIT - 1:
+        if np.where((np.abs(np.array(im)[:, :, :3] - orange_rgb) <= color_threshold).all(axis=2))[0].shape[0] > 10:
+            alarm_legendary()
+    print(f"finished picking attempt #{attempted + 1}")
+    return True
+
+
+def alarm_legendary():
+    print("there are legendary items you can't pick up")
+
+
 if __name__ == '__main__':
 
     # location = "bilefen"
@@ -512,6 +566,7 @@ if __name__ == '__main__':
 
     while True:
         fish(fish_type)
+        p.sleep(1)
         if sys.platform == "darwin":
             trade_fish_buy_bait_go_back(key_to_npc, key_to_fish)
         else:

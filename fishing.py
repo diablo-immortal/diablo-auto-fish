@@ -150,7 +150,7 @@ def pull():
         ub_range = 350
         lb_right_end = 650
         amount_pull = 80  # amount of position change for each pull
-    
+
     else:
         im_bar = p.screenshot("temp_im/temp.png", region=(x0+560, y0+145, 806, 1))
         dark_color_gray = 70
@@ -448,7 +448,7 @@ def buy_bait():
     p.click(x0//2 + 1010, y0//2 + 170)
 
 
-def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confidence=0.9, region_boarder=10, 
+def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confidence=0.9, region_boarder=10,
                 offset=(0.2, 0.2, -0.2, -0.2)):
     while True:
         box = check(im_state, confidence=confidence, region_boarder=region_boarder)
@@ -460,18 +460,27 @@ def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confide
             return 1  # fail
 
 
+def find_npc(npc_color_rgb=np.array([248, 198, 134])):
+    im = p.screenshot()
+    matches = np.argwhere((np.abs(np.array(im)[:, :, :3] - npc_color_rgb) <= 5).all(axis=2))
+    if matches.shape[0] > 50:
+        position = np.median(matches, axis=0)[::-1]
+        return int(position[0]), int(position[1])
+
+
 def trade_with_gui(attempts_trade=3, attempts_sell=3):
     if attempts_trade > 0:
         p.sleep(1)
         print("selling based on gui")
-        position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
+        # position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
+        position = find_npc()
         if not position:
             return trade_with_gui(attempts_trade - 1)
         p.click(position)
         error = 0
         error += click_image("trade", time.time(), 3)
         error += click_image("select", time.time(), 3)
-        error += click_image("exchange", time.time(), 3, confidence=0.99)
+        error += click_image("exchange", time.time(), 3, confidence=0.95)
         p.sleep(1)
         if error > 0:
             p.click(window.center)
@@ -486,7 +495,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
         else:
             return trade_with_gui(0)
     elif attempts_sell > 0:
-        p.sleep(15)
+        p.sleep(3)
         print("buying baits...")
         while True:
             for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY]:
@@ -495,7 +504,8 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
                     click_box(box)
             if not box:
                 break
-        position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
+        # position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
+        position = find_npc()
         if not position:
             return trade_with_gui(0, attempts_sell - 1)
         p.click(position)

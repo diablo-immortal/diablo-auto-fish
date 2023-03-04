@@ -8,33 +8,41 @@ if sys.platform == "darwin":
 
 Box = collections.namedtuple('Box', 'left top width height')
 
+RESOURCES_DIR = os.path.join("..", "resources")
+TEMP_DIR = os.path.join("..", "temp_im")
+
+if not os.path.exists(TEMP_DIR):
+    os.mkdir(TEMP_DIR)
+
 STANDBY = 's'           # not in fishing state
 WAITING = 'w'           # fishing pre-stage 1, waiting for bonus rate hit yellow and fish bite
 READY = 'r'             # fishing pre-stage 3, ready to fish
 PULLING = 'p'           # fishing main stage, pulling fish up
 INTERRUPTED_LAIR = 'l'  # interrupted by lair auto navigation
 INTERRUPTED_PARTY = 'i' # interrupted by party invite
+INTERRUPTED_RAID = 'd'  # interrupted by raid invite
 TALK = 't'              # when npc talking is available
 PICK = 'k'              # when picking items is available
 
 im_data = {
-    STANDBY:            "resources/standby.png",
-    WAITING:            "resources/not_ready.png",
-    READY:              "resources/pull.png",
-    PULLING:            "resources/pulling.png",
-    INTERRUPTED_LAIR:   "resources/cancel_lair.png",
-    INTERRUPTED_PARTY:  "resources/cancel.png",
-    TALK:               "resources/talk.png",
-    PICK:               "resources/pick.png",
-    "npc":              "resources/npc.png",
-    "trade":            "resources/trade.png",
-    "select":           "resources/select_all.png",
-    "exchange":         "resources/exchange.png",
-    "x":                "resources/x.png",
-    "shop":             "resources/shop.png",
-    "amount":           "resources/amount.png",
-    "9":                "resources/number9.png",
-    "buy":              "resources/buy.png"
+    STANDBY:            os.path.join(RESOURCES_DIR, "standby.png"),
+    WAITING:            os.path.join(RESOURCES_DIR, "not_ready.png"),
+    READY:              os.path.join(RESOURCES_DIR, "pull.png"),
+    PULLING:            os.path.join(RESOURCES_DIR, "pulling.png"),
+    INTERRUPTED_LAIR:   os.path.join(RESOURCES_DIR, "cancel_lair.png"),
+    INTERRUPTED_PARTY:  os.path.join(RESOURCES_DIR, "cancel.png"),
+    INTERRUPTED_RAID:   os.path.join(RESOURCES_DIR, "cancel.png"),
+    TALK:               os.path.join(RESOURCES_DIR, "talk.png"),
+    PICK:               os.path.join(RESOURCES_DIR, "pick.png"),
+    "npc":              os.path.join(RESOURCES_DIR, "npc.png"),
+    "trade":            os.path.join(RESOURCES_DIR, "trade.png"),
+    "select":           os.path.join(RESOURCES_DIR, "select_all.png"),
+    "exchange":         os.path.join(RESOURCES_DIR, "exchange.png"),
+    "x":                os.path.join(RESOURCES_DIR, "x.png"),
+    "shop":             os.path.join(RESOURCES_DIR, "shop.png"),
+    "amount":           os.path.join(RESOURCES_DIR, "amount.png"),
+    "9":                os.path.join(RESOURCES_DIR, "number9.png"),
+    "buy":              os.path.join(RESOURCES_DIR, "buy.png")
 }
 
 FISH_TYPE_COLOR = (125, 125, 120)
@@ -57,6 +65,7 @@ if sys.platform == 'darwin':
     regions = {
         INTERRUPTED_LAIR: (x0 + 735, y0 + 945, 180, 40),
         INTERRUPTED_PARTY: (x0 + 760, y0 + 1255, 225, 45),
+        INTERRUPTED_RAID: (x0 + 760, y0 + 1255, 225, 45),
         PULLING: (x0 + 528, y0 + 200, 83, 31),
         READY: (x0 + 1800, y0 + 1100, 230, 230),
         WAITING: (x0 + 1800, y0 + 1100, 230, 230),
@@ -82,17 +91,14 @@ else:
     window.activate()
     x0, y0 = window.left, window.top
 
-    if os.path.exists("resources/regions.json"):
+    if os.path.exists(os.path.join(RESOURCES_DIR, "regions.json")):
         try:
-            with open("resources/regions.json", 'r') as f:
+            with open(os.path.join(RESOURCES_DIR, "regions.json"), 'r') as f:
                 regions = json.load(f)
         except:
             regions = {}
     else:
         regions = {}
-
-if not os.path.exists("temp_im"):
-    os.mkdir("temp_im")
 
 boxes = {}
 # boxes = {k: Box(*v) for k, v in regions.items()}
@@ -140,8 +146,8 @@ def pull():
     # im_bar = p.screenshot("temp.png", region=[x0+610, y0+214, 885, 1])
     # im_bar = ImageGrab.grab(bbox=(x0//2+305, y0//2+107, x0//2+305+442, y0//2+107+1))
     if sys.platform == "darwin":
-        subprocess.run(["screencapture", "-x", "-R" f"{x0//2+306},{y0//2+107},441,1", "temp_im/temp.png"])
-        im_bar = Image.open("temp_im/temp.png")
+        subprocess.run(["screencapture", "-x", "-R" f"{x0//2+306},{y0//2+107},441,1", os.path.join(TEMP_DIR, "temp.png")])
+        im_bar = Image.open(os.path.join(TEMP_DIR, "temp.png"))
         dark_color_gray = 70
         bright_color_gray = 165
         n_dark = 10  # number of consecutive dark pixels to determine current position
@@ -152,7 +158,7 @@ def pull():
         amount_pull = 80  # amount of position change for each pull
 
     else:
-        im_bar = p.screenshot("temp_im/temp.png", region=(x0+560, y0+145, 806, 1))
+        im_bar = p.screenshot(os.path.join(TEMP_DIR, "temp.png"), region=(x0+560, y0+145, 806, 1))
         dark_color_gray = 70
         bright_color_gray = 155
         n_dark = 9  # number of consecutive dark pixels to determine current position
@@ -228,6 +234,12 @@ def check_status(prev_status, fish_type="yellow"):
         if prev_status != INTERRUPTED_PARTY:
             print(f"interrupted by party, check took {time.time() - t0:.2f} seconds.")
         return INTERRUPTED_PARTY, box
+    if sys.platform == "win32":
+        box = check(INTERRUPTED_RAID)
+        if box:
+            if prev_status != INTERRUPTED_RAID:
+                print(f"interrupted by raid, check took {time.time() - t0:.2f} seconds.")
+            return INTERRUPTED_RAID, box
     box = check(PULLING)
     if box:
         if prev_status != PULLING:
@@ -279,7 +291,7 @@ def check(status, confidence=0.9, region_boarder=10):
                                                       box.top - region_boarder,
                                                       box.width + 2 * region_boarder,
                                                       box.height + 2 * region_boarder]]})
-            with open("resources/regions.json", 'w') as f:
+            with open(os.path.join(RESOURCES_DIR, "regions.json"), 'w') as f:
                 json.dump(regions, f)
     return box
 
@@ -300,7 +312,7 @@ def fish(fish_type="yellow"):
                     bar_or_bounds_not_found_time = time.time()
             continue
 
-        if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR:
+        if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR or status == INTERRUPTED_RAID:
             activate_diablo(sys.platform)
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             click_box(box)
@@ -498,7 +510,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
         p.sleep(3)
         print("buying baits...")
         while True:
-            for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY]:
+            for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY, INTERRUPTED_RAID]:
                 box = check(status)
                 if box:
                     click_box(box)
@@ -521,7 +533,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
 
 
 def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
-    print(f"start picking items, attempt #{attempted + 1}")
+    # print(f"start picking items, attempt #{attempted + 1}")
 
     blue_rgb = np.array([89, 96, 241])
     yellow_rgb = np.array([233, 231, 77])
@@ -532,7 +544,7 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
     click_span = 120
     click_flex = 30
     region = (470, 240, 980, 600)
-    im = p.screenshot("temp_im/items_check.png", region=region)
+    im = p.screenshot(os.path.join(TEMP_DIR, "items_check.png"), region=region)
     if pickup_blue:
         pts = np.argwhere((np.abs(np.array(im)[:, :, :3] - blue_rgb) <= color_threshold).all(axis=2) |
                           (np.abs(np.array(im)[:, :, :3] - yellow_rgb) <= color_threshold).all(axis=2) |
@@ -546,9 +558,9 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
     height_width = pts.max(axis=0) - top_left
     click_region = (region[0] + top_left[1],            region[1] + top_left[0] + min_y_offset,
                     height_width[1],                    height_width[0] + max_y_offset - min_y_offset)
-    for j in range(1, click_region[3] // click_span):
+    for j in range(1, click_region[3] // click_span + 1):
         y = int(click_region[1] + click_span * j + (random.random() - 0.5) * click_flex)
-        for i in range(1, click_region[2] // click_span):
+        for i in range(1, click_region[2] // click_span + 1):
             x = int(click_region[0] + click_span * i + (random.random() - 0.5) * click_flex)
             p.click(x, y)
             p.sleep(0.1)

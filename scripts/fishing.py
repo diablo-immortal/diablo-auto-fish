@@ -662,10 +662,19 @@ if __name__ == '__main__':
 
         def log(contents):
             root.log_text.insert('end', f"{contents}\n")
+            root.log_text.see('end')
 
         root.fish_button.config(command=lambda: fish(root.type_var.get(), root.bright_var.get()))
         root.trade_button.config(command=lambda: trade(root.loc_var.get()))
         root.auto_fish_button.config(command=lambda: start_auto_fishing(root.auto_fish_button))
+
+        for title in p.getAllTitles():
+            if title.endswith("py.exe"):
+                p.getWindowsWithTitle(title)[0].minimize()
+
+        root.lift()
+        root.attributes('-topmost', True)
+        root.after_idle(root.attributes, '-topmost', False)
 
         root.mainloop()
 

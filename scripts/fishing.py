@@ -8,8 +8,8 @@ if sys.platform == "darwin":
 
 Box = collections.namedtuple('Box', 'left top width height')
 
-RESOURCES_DIR = os.path.join("..", "resources")
-TEMP_DIR = os.path.join("..", "temp_im")
+RESOURCES_DIR = os.path.join(os.path.dirname(os.getcwd()), "resources")
+TEMP_DIR = os.path.join(os.path.dirname(os.getcwd()), "temp_im")
 
 if not os.path.exists(TEMP_DIR):
     os.mkdir(TEMP_DIR)

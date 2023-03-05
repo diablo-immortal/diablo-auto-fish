@@ -15,18 +15,25 @@ Note: the script is for discussion and studying purpose and should not be used t
 - Pillow
 - pyautogui
 
-### Installation
-- 安装Python 3
-- 将代码下载到本地后，打开命令提示符（w）.
-
-After cloning this repository to local, in command line (press WinKey + R and input cmd, then enter), run:
+### 安装
+- 安装Python 3；
+- 将代码下载到本地后，打开命令提示符（WinKey + R，输入cmd后回车），运行：
 
 ```
 cd <path-to-directory>
 python -m pip install -r requirements.txt
 ```
 
-### In-game Setting
+### Installation
+- Install Python 3;
+- After cloning this repository to local, in command line (press WinKey + R and input cmd, then enter), run:
+
+```
+cd <path-to-directory>
+python -m pip install -r requirements.txt
+```
+
+### 游戏内设定
 - 显示器分辨率设置为1920\*1080，游戏以**英文版**运行（以后或许支持中文游戏界面）；
 - 显示设置：
   - 图像模式：经典
@@ -41,6 +48,7 @@ python -m pip install -r requirements.txt
   - **鼠标左键不要设置任何技能和操作**
 - 站在钓鱼点，注意不要离NPC太远，要在可以对话的距离内。
 
+### In-game Settings
 - Diablo Immortal must be running at 1920\*1080 resolution, English version.
 - Display setting:
   - Classic mode
@@ -55,7 +63,7 @@ python -m pip install -r requirements.txt
   - **Do not set Mouse left (primary) button for any skills**
 - Stand your character at a fishing spot, preferably not ashwold because there's a mob coming over to attack you once in a while.
 
-### Start Fishing
+### 开始钓鱼
 - 确保游戏正在运行中，使用组合键ALT + TAB切出窗口，找到`fishing.py`双击打开；
 - 选择鱼的种类和钓鱼地点，亮度条建议保持默认；
 - 目前共有3个模式：
@@ -64,6 +72,7 @@ python -m pip install -r requirements.txt
   - 自动卖鱼和买鱼饵选第三个选项，不钓鱼。
 - 开始后，如果要停止或者改变选项，ALT + TAB切出窗口后可以点击停止。
 
+### Start Fishing
 - While the game is running, switch out to the folder that contains `fishing.py`, double-click to open;
 - Choose fish type and location, and click Auto Fishing.
 - To stop, switch out and click Stop Fishing.

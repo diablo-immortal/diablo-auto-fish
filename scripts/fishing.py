@@ -13,8 +13,9 @@ for filename in os.listdir(os.getcwd()):
     if "screenshot" in filename:
         os.unlink(os.path.join(os.getcwd(), filename))
 
-RESOURCES_DIR = os.path.join(os.path.dirname(os.getcwd()), "resources")
-TEMP_DIR = os.path.join(os.path.dirname(os.getcwd()), "temp_im")
+DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+RESOURCES_DIR = os.path.join(DIR, "resources")
+TEMP_DIR = os.path.join(DIR, "temp_im")
 
 if not os.path.exists(TEMP_DIR):
     os.mkdir(TEMP_DIR)
@@ -649,28 +650,50 @@ if __name__ == '__main__':
     else:
         root = GUI()
 
-        def start_auto_fishing(button):
+        def start_auto_fishing():
             root.not_fishing = False
             args = (root.loc_var.get(), root.type_var.get(), root.bright_var.get(), lambda: root.not_fishing)
             root.thread = threading.Thread(target=auto_fishing, args=args, daemon=True)
             root.thread.start()
-            button.config(text="Stop fishing", command=lambda: stop_auto_fishing(button))
+            root.auto_fish_button.config(text="Stop Fishing", command=lambda: stop_auto_fishing())
+            root.fish_button["state"] = "disabled"
+            root.trade_button["state"] = "disabled"
 
-        def stop_auto_fishing(button):
+        def stop_auto_fishing():
             root.not_fishing = True
-            button.config(text="Auto Fishing", command=lambda: start_auto_fishing(button))
+            root.thread.join()
+            root.auto_fish_button.config(text="Auto Fishing", command=lambda: start_auto_fishing())
+            root.fish_button["state"] = "normal"
+            root.trade_button["state"] = "normal"
+
+        def start_fishing():
+            root.not_fishing = False
+            args = (root.type_var.get(), root.bright_var.get(), lambda: root.not_fishing)
+            root.thread = threading.Thread(target=fish, args=args, daemon=True)
+            root.thread.start()
+            root.fish_button.config(text="Stop Fishing", command=lambda: stop_fishing())
+            root.auto_fish_button["state"] = "disabled"
+            root.trade_button["state"] = "disabled"
+
+        def stop_fishing():
+            root.not_fishing = True
+            root.thread.join()
+            root.fish_button.config(text="Fish 1 Round", command=lambda: start_fishing())
+            root.auto_fish_button["state"] = "normal"
+            root.trade_button["state"] = "normal"
 
         def log(contents):
             root.log_text.insert('end', f"{contents}\n")
             root.log_text.see('end')
 
-        root.fish_button.config(command=lambda: fish(root.type_var.get(), root.bright_var.get()))
+        root.fish_button.config(command=lambda: start_fishing())
         root.trade_button.config(command=lambda: trade(root.loc_var.get()))
-        root.auto_fish_button.config(command=lambda: start_auto_fishing(root.auto_fish_button))
+        root.auto_fish_button.config(command=lambda: start_auto_fishing())
 
-        for title in p.getAllTitles():
-            if title.endswith("py.exe"):
-                p.getWindowsWithTitle(title)[0].minimize()
+        if sys.platform == "win32":
+            for title in p.getAllTitles():
+                if title.endswith("py.exe") or "python" in title:
+                    p.getWindowsWithTitle(title)[0].minimize()
 
         root.lift()
         root.attributes('-topmost', True)

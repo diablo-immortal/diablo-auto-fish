@@ -1,12 +1,17 @@
 import pyautogui as p
 import numpy as np
-import subprocess, random, time, os, sys, collections, json
+import subprocess, random, time, os, sys, collections, json, threading
 from PIL import Image
+from gui import GUI
 
 if sys.platform == "darwin":
     from locate_im import locate_on_screen, pixel_match_color
 
 Box = collections.namedtuple('Box', 'left top width height')
+
+for filename in os.listdir(os.getcwd()):
+    if "screenshot" in filename:
+        os.unlink(os.path.join(os.getcwd(), filename))
 
 RESOURCES_DIR = os.path.join(os.path.dirname(os.getcwd()), "resources")
 TEMP_DIR = os.path.join(os.path.dirname(os.getcwd()), "temp_im")
@@ -55,7 +60,7 @@ if sys.platform == 'darwin':
     MAX_TIMEOUT = 2
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
 
-    subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
+    # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
     pos = subprocess.run(["osascript", "-e",
                           'tell application "System Events" to tell process "Diablo Immortal" to get position of window 1'],
                          stdout=subprocess.PIPE)
@@ -88,7 +93,7 @@ else:
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
 
     window = p.getWindowsWithTitle("Diablo Immortal")[0]
-    window.activate()
+    # window.activate()
     x0, y0 = window.left, window.top
 
     if os.path.exists(os.path.join(RESOURCES_DIR, "regions.json")):
@@ -103,7 +108,7 @@ else:
 boxes = {}
 # boxes = {k: Box(*v) for k, v in regions.items()}
 
-# print(x0, y0)
+# log(x0, y0)
 
 # region_pull = (x0/2 + 930, y0/2 + 590, 50, 50)
 
@@ -113,13 +118,18 @@ boxes = {}
 # dx, dy = [int(n) for n in width.stdout.decode("utf-8").strip().split(", ")]
 #
 # whole_region = [n * 2 for n in [x0, y0, dx, dy]]
-# print(whole_region)
+# log(whole_region)
 
 # x0, y0 = 718, 256
 
+# if __name__ == '__main__':
+#     log = print
+# else:
+#     from gui import log
 
-def activate_diablo(platform):
-    if platform == "darwin":
+
+def activate_diablo():
+    if sys.platform == "darwin":
         subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
     else:
         window.activate()
@@ -141,7 +151,7 @@ def click_box(box, clicks=1, interval=0.01, button=p.PRIMARY, offset_left=0.2, o
     p.click(x, y, clicks=clicks, interval=interval, button=button)
 
 
-def pull():
+def pull(brightness=50):
     # t0 = time.time()
     # im_bar = p.screenshot("temp.png", region=[x0+610, y0+214, 885, 1])
     # im_bar = ImageGrab.grab(bbox=(x0//2+305, y0//2+107, x0//2+305+442, y0//2+107+1))
@@ -160,7 +170,7 @@ def pull():
     else:
         im_bar = p.screenshot(os.path.join(TEMP_DIR, "temp.png"), region=(x0+560, y0+145, 806, 1))
         dark_color_gray = 70
-        bright_color_gray = 155
+        bright_color_gray = int(brightness / 10) + 150
         n_dark = 9  # number of consecutive dark pixels to determine current position
         n_offset = 7  # backward offset after finding n_dark consecutive dark pixels
         lb_range = 130
@@ -190,10 +200,10 @@ def pull():
     if current is None or current < 0 or bounds.shape[0] == 0:
         return None
     # t3 = time.time()
-    # print(t1-t0, t2-t1, t3-t2)
+    # log(t1-t0, t2-t1, t3-t2)
 
-    # print(current)
-    # print(bounds, bounds.shape, bounds.shape[0])
+    # log(current)
+    # log(bounds, bounds.shape, bounds.shape[0])
     if (2 <= bounds.shape[0] <= 10 and lb_range < bound_range < ub_range) or (bounds[0] > lb_right_end and bound_range < 10):
         if bounds[0] < current < bounds[-1] - amount_pull:
             if sys.platform == "darwin":
@@ -227,50 +237,50 @@ def check_status(prev_status, fish_type="yellow"):
     box = check(INTERRUPTED_LAIR)
     if box:
         if prev_status != INTERRUPTED_LAIR:
-            print(f"interrupted by lair, check took {time.time() - t0:.2f} seconds.")
+            log(f"interrupted by lair, check took {time.time() - t0:.2f} seconds.")
         return INTERRUPTED_LAIR, box
     box = check(INTERRUPTED_PARTY)
     if box:
         if prev_status != INTERRUPTED_PARTY:
-            print(f"interrupted by party, check took {time.time() - t0:.2f} seconds.")
+            log(f"interrupted by party, check took {time.time() - t0:.2f} seconds.")
         return INTERRUPTED_PARTY, box
     if sys.platform == "win32":
         box = check(INTERRUPTED_RAID)
         if box:
             if prev_status != INTERRUPTED_RAID:
-                print(f"interrupted by raid, check took {time.time() - t0:.2f} seconds.")
+                log(f"interrupted by raid, check took {time.time() - t0:.2f} seconds.")
             return INTERRUPTED_RAID, box
     box = check(PULLING)
     if box:
         if prev_status != PULLING:
-            print(f"pulling fish, check took {time.time() - t0:.2f} seconds.")
+            log(f"pulling fish, check took {time.time() - t0:.2f} seconds.")
         return PULLING, box
     box = check(READY, confidence=0.99)
     if box:
         if prev_status != WAITING:
-            print(f"fish up, check took {time.time() - t0:.2f} seconds.")
+            log(f"fish up, check took {time.time() - t0:.2f} seconds.")
         fish_type_coords = (x0 + FISH_TYPE_X_COORD[fish_type], y0 + FISH_TYPE_Y_COORD)
         if pixel_match_color(*fish_type_coords, FISH_TYPE_COLOR, FISH_TYPE_X_COORD_TOLERANCE) or fish_type == "white":
             if prev_status != READY:
-                print(f"ready to fish, check took {time.time() - t0:.2f} seconds.")
+                log(f"ready to fish, check took {time.time() - t0:.2f} seconds.")
             return READY, box
         if prev_status != WAITING:
-            print(f"bonus did not reach yellow, check took {time.time() - t0:.2f} seconds.")
+            log(f"bonus did not reach yellow, check took {time.time() - t0:.2f} seconds.")
         return WAITING, box
     box = check(WAITING, confidence=0.99)
     if box:
         if prev_status != WAITING:
-            print(f"waiting for fish, check took {time.time() - t0:.2f} seconds.")
+            log(f"waiting for fish, check took {time.time() - t0:.2f} seconds.")
         return WAITING, box
     box = check(STANDBY, confidence=0.8)
     if box:
         if prev_status != STANDBY:
-            print(f"standby, check took {time.time() - t0:.2f} seconds.")
+            log(f"standby, check took {time.time() - t0:.2f} seconds.")
         return STANDBY, box
     box = check(PICK)
     if box:
         if prev_status != PICK:
-            print(f"pick an item, check took {time.time() - t0:.2f} seconds.")
+            log(f"pick an item, check took {time.time() - t0:.2f} seconds.")
         return PICK, box
     return None, None
 
@@ -296,11 +306,18 @@ def check(status, confidence=0.9, region_boarder=10):
     return box
 
 
-def fish(fish_type="yellow"):
+def fish(fish_type="yellow", brightness=50, stop=None):
+    if stop is None:
+        def stop():
+            return False
     prev_status = ''
     pickup_attempted = 0
     fishing_attempted = 0
-    while fishing_attempted < 30:
+    n_standby_cont = 0
+    activate_diablo()
+    while fishing_attempted < 30 and n_standby_cont < 3:
+        if stop():
+            return False
         status, box = check_status(prev_status, fish_type)
         if not status:
             continue
@@ -308,22 +325,22 @@ def fish(fish_type="yellow"):
             t = time.time()
             bar_or_bounds_not_found_time = time.time()
             while time.time() - t < MAX_FISHING_TIME and bar_or_bounds_not_found_time < MAX_TIMEOUT:
-                if pull():  # successful pull
+                if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
             continue
 
         if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR or status == INTERRUPTED_RAID:
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             click_box(box)
             # p.click(x, y)
         elif status == PICK:
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             click_box(box)
             # p.click(x, y)
         elif status == STANDBY:
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             if sys.platform == "darwin":
                 click_box(box)
@@ -331,10 +348,14 @@ def fish(fish_type="yellow"):
                 click_box(box, button=p.SECONDARY)
             # p.click(x, y)
             fishing_attempted += 1
+            if prev_status == STANDBY:
+                n_standby_cont += 1
+            else:
+                n_standby_cont = 1
             p.sleep(1)
-            print(f"number of fishing attempts: {fishing_attempted}")
+            log(f"number of fishing attempts: {fishing_attempted}")
         elif status == READY:
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             click_box(box)
@@ -346,7 +367,7 @@ def fish(fish_type="yellow"):
             t = time.time()
             bar_or_bounds_not_found_time = time.time()
             while time.time() - t < MAX_FISHING_TIME and time.time() - bar_or_bounds_not_found_time < MAX_TIMEOUT:
-                if pull():  # successful pull
+                if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
         elif status == WAITING and sys.platform == "win32" and pickup_attempted < PICKUP_LIMIT:
             if pickup_win32(pickup_attempted):
@@ -354,6 +375,7 @@ def fish(fish_type="yellow"):
             else:
                 pickup_attempted = 10
         prev_status = status
+    return True
 
 
 def check_npc_or_fish():
@@ -371,14 +393,14 @@ def check_npc_or_fish():
 
     box = check(PICK)
     if box:
-        print("picking up items")
+        log("picking up items")
         return PICK, box
 
     return None, None
 
 
 def walk(key, duration=0.1):
-    activate_diablo(sys.platform)
+    activate_diablo()
     # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
     p.sleep(0.3)
     p.keyDown(key)
@@ -389,13 +411,13 @@ def walk(key, duration=0.1):
 def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
     stage = "trade"
     while True:
-        print(stage)  # TODO
+        log(stage)  # TODO
         status, box = check_npc_or_fish()
 
         if status == INTERRUPTED_PARTY:
             x = box.left / 2 + random.random() * box.width / 2
             y = box.top / 2 + random.random() * box.height / 2
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             p.click(x, y)
@@ -409,7 +431,7 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
         elif status == STANDBY and stage == "back":
             return 0
         elif status == PICK:
-            activate_diablo(sys.platform)
+            activate_diablo()
             # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             p.press('space')
@@ -425,7 +447,7 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
 
 
 def trade_fish():
-    print("selling fish to npc...")
+    log("selling fish to npc...")
     p.press('space')
     p.sleep(1)
     p.click(x0//2 + 850, y0//2 + 540)
@@ -440,7 +462,7 @@ def trade_fish():
 
 
 def buy_bait():
-    print("buying baits...")
+    log("buying baits...")
     p.press('space')
     p.sleep(1)
     p.click(x0//2 + 840, y0//2 + 600)
@@ -483,7 +505,7 @@ def find_npc(npc_color_rgb=np.array([248, 198, 134])):
 def trade_with_gui(attempts_trade=3, attempts_sell=3):
     if attempts_trade > 0:
         p.sleep(1)
-        print("selling based on gui")
+        log("selling based on gui")
         # position = p.locateCenterOnScreen("resources/npc.png", confidence=0.8)
         position = find_npc()
         if not position:
@@ -508,7 +530,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
             return trade_with_gui(0)
     elif attempts_sell > 0:
         p.sleep(3)
-        print("buying baits...")
+        log("buying baits...")
         while True:
             for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY, INTERRUPTED_RAID]:
                 box = check(status)
@@ -533,7 +555,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
 
 
 def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
-    # print(f"start picking items, attempt #{attempted + 1}")
+    # log(f"start picking items, attempt #{attempted + 1}")
 
     blue_rgb = np.array([89, 96, 241])
     yellow_rgb = np.array([233, 231, 77])
@@ -567,32 +589,84 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
     if legendary_alarm and attempted >= PICKUP_LIMIT - 1:
         if np.where((np.abs(np.array(im)[:, :, :3] - orange_rgb) <= color_threshold).all(axis=2))[0].shape[0] > 10:
             alarm_legendary()
-    print(f"finished picking attempt #{attempted + 1}")
+    log(f"finished picking attempt #{attempted + 1}")
     return True
 
 
 def alarm_legendary():
-    print("there are legendary items you can't pick up")
+    log("there are legendary items you can't pick up")
+
+
+def trade(location):
+    activate_diablo()
+    if sys.platform == "darwin":
+        key_to_npc, key_to_fish = KEY_MOVE[location]
+        trade_fish_buy_bait_go_back(key_to_npc, key_to_fish)
+    else:
+        trade_with_gui()
+
+
+def fish_and_trade(location, fish_type, brightness=50, stop=None):
+    if stop is None:
+        def stop():
+            return False
+    if fish(fish_type, brightness, stop):
+        p.sleep(1)
+        trade(location)
+        p.sleep(1)
+
+
+def auto_fishing(location, fish_type, brightness=50, stop=None):
+    if stop is None:
+        def stop():
+            return None
+    while True:
+        fish_and_trade(location, fish_type, brightness, stop)
+        if stop():
+            break
+
+
+def log(contents):
+    print(contents)
 
 
 if __name__ == '__main__':
-
-    # location = "bilefen"
-    # location = "ashwold"
-    location = "tundra"
-    key_to_npc, key_to_fish = KEY_MOVE[location]
-
-    # fish_type = "white"
-    # fish_type = "blue"
-    fish_type = "yellow"
-
-    while True:
-        fish(fish_type)
-        p.sleep(1)
-        if sys.platform == "darwin":
-            trade_fish_buy_bait_go_back(key_to_npc, key_to_fish)
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["bilifen", "ashwold", "tundra"]:
+            location = sys.argv[1]
         else:
-            trade_with_gui()
+            # location = "bilefen"
+            # location = "ashwold"
+            location = "tundra"
+        if len(sys.argv) > 2 and sys.argv[2] in ["white", "blue", "yellow"]:
+            fish_type = sys.argv[2]
+        else:
+            # fish_type = "white"
+            # fish_type = "blue"
+            fish_type = "yellow"
 
+        auto_fishing(location, fish_type)
+    else:
+        root = GUI()
+
+        def start_auto_fishing(button):
+            root.not_fishing = False
+            args = (root.loc_var.get(), root.type_var.get(), root.bright_var.get(), lambda: root.not_fishing)
+            root.thread = threading.Thread(target=auto_fishing, args=args, daemon=True)
+            root.thread.start()
+            button.config(text="Stop fishing", command=lambda: stop_auto_fishing(button))
+
+        def stop_auto_fishing(button):
+            root.not_fishing = True
+            button.config(text="Auto Fishing", command=lambda: start_auto_fishing(button))
+
+        def log(contents):
+            root.log_text.insert('end', f"{contents}\n")
+
+        root.fish_button.config(command=lambda: fish(root.type_var.get(), root.bright_var.get()))
+        root.trade_button.config(command=lambda: trade(root.loc_var.get()))
+        root.auto_fish_button.config(command=lambda: start_auto_fishing(root.auto_fish_button))
+
+        root.mainloop()
 
 

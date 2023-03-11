@@ -1,6 +1,7 @@
 import pyautogui as p
 import numpy as np
-import subprocess, random, time, os, sys, collections, json, threading
+import random, time, os, sys, collections, json
+from datetime import datetime
 from PIL import Image
 from gui import GUI
 
@@ -55,13 +56,13 @@ FISH_TYPE_COLOR = (125, 125, 120)
 FISH_TYPE_X_COORD_TOLERANCE = 100
 
 if sys.platform == 'darwin':
+    import subprocess
     FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1050}
     FISH_TYPE_Y_COORD = 137
     MAX_FISHING_TIME = 20
     MAX_TIMEOUT = 2
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
 
-    # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
     pos = subprocess.run(["osascript", "-e",
                           'tell application "System Events" to tell process "Diablo Immortal" to get position of window 1'],
                          stdout=subprocess.PIPE)
@@ -94,7 +95,6 @@ else:
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
 
     window = p.getWindowsWithTitle("Diablo Immortal")[0]
-    # window.activate()
     x0, y0 = window.left, window.top
 
     if os.path.exists(os.path.join(RESOURCES_DIR, "regions.json")):
@@ -107,11 +107,6 @@ else:
         regions = {}
 
 boxes = {}
-# boxes = {k: Box(*v) for k, v in regions.items()}
-
-# log(x0, y0)
-
-# region_pull = (x0/2 + 930, y0/2 + 590, 50, 50)
 
 # width = subprocess.run(["osascript", "-e",
 #                         'tell application "System Events" to tell process "Diablo Immortal" to get size of window 1'],
@@ -119,14 +114,6 @@ boxes = {}
 # dx, dy = [int(n) for n in width.stdout.decode("utf-8").strip().split(", ")]
 #
 # whole_region = [n * 2 for n in [x0, y0, dx, dy]]
-# log(whole_region)
-
-# x0, y0 = 718, 256
-
-# if __name__ == '__main__':
-#     log = print
-# else:
-#     from gui import log
 
 
 def activate_diablo():
@@ -143,8 +130,6 @@ def click_box(box, clicks=1, interval=0.01, button=p.PRIMARY, offset_left=0.2, o
     height = box.height * (1 - offset_top + offset_bottom)
     x = left + random.random() * width
     y = top + random.random() * height
-    # x = box.left + (0.2 + 0.6 * random.random()) * box.width
-    # y = box.top + (0.2 + 0.6 * random.random()) * box.height
     if sys.platform == "darwin":
         x, y = x // 2, y // 2
     else:
@@ -154,8 +139,6 @@ def click_box(box, clicks=1, interval=0.01, button=p.PRIMARY, offset_left=0.2, o
 
 def pull(brightness=50):
     # t0 = time.time()
-    # im_bar = p.screenshot("temp.png", region=[x0+610, y0+214, 885, 1])
-    # im_bar = ImageGrab.grab(bbox=(x0//2+305, y0//2+107, x0//2+305+442, y0//2+107+1))
     if sys.platform == "darwin":
         subprocess.run(["screencapture", "-x", "-R" f"{x0//2+306},{y0//2+107},441,1", os.path.join(TEMP_DIR, "temp.png")])
         im_bar = Image.open(os.path.join(TEMP_DIR, "temp.png"))
@@ -180,9 +163,6 @@ def pull(brightness=50):
         amount_pull = 65  # amount of position change for each pull
 
     # t1 = time.time()
-    # bar = np.array(im_bar)[0, :, :3]
-    # current = np.where((bar < 50).all(axis=1))[0][0]
-    # bounds = np.where((bar > np.array([180, 150, 100])).all(axis=1))[0]
     bar_g = np.dot(np.array(im_bar)[0, :, :3], [0.2989, 0.5870, 0.1140])
     dark = np.where(bar_g < dark_color_gray)[0]
     diff_dark = np.diff(dark)
@@ -211,7 +191,6 @@ def pull(brightness=50):
                 p.press('n')
             else:
                 click_box(boxes[READY])
-            # p.sleep(random.random()*0.03)
         elif bound_range < 10:
             pull_count = (bar_g.shape[0] - current) // amount_pull
             if sys.platform == "darwin":
@@ -224,9 +203,6 @@ def pull(brightness=50):
                 p.write('n' * pull_count)
             else:
                 click_box(boxes[READY], pull_count)
-            # for _ in range((bounds[-1] - current) // 100 + 1):
-            #     p.press('n')
-            #     p.sleep(random.random()*0.03)
         else:
             p.sleep(random.random()*0.03)
         return bound_range
@@ -332,22 +308,16 @@ def fish(fish_type="yellow", brightness=50, stop=None):
 
         if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR or status == INTERRUPTED_RAID:
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             click_box(box)
-            # p.click(x, y)
         elif status == PICK:
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             click_box(box)
-            # p.click(x, y)
         elif status == STANDBY:
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             if sys.platform == "darwin":
                 click_box(box)
             else:
                 click_box(box, button=p.SECONDARY)
-            # p.click(x, y)
             fishing_attempted += 1
             if prev_status == STANDBY:
                 n_standby_cont += 1
@@ -357,12 +327,8 @@ def fish(fish_type="yellow", brightness=50, stop=None):
             log(f"number of fishing attempts: {fishing_attempted}")
         elif status == READY:
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             click_box(box)
-            # p.click(x, y)
-            # p.click(region_pull[0] + random.random() * region_pull[2],
-            #         region_pull[1] + random.random() * region_pull[3])
             p.sleep(0.1)
             status = PULLING
             t = time.time()
@@ -402,7 +368,6 @@ def check_npc_or_fish():
 
 def walk(key, duration=0.1):
     activate_diablo()
-    # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
     p.sleep(0.3)
     p.keyDown(key)
     p.sleep(duration)
@@ -419,7 +384,6 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             x = box.left / 2 + random.random() * box.width / 2
             y = box.top / 2 + random.random() * box.height / 2
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             p.click(x, y)
         elif status == TALK and stage == "trade":
@@ -433,7 +397,6 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             return 0
         elif status == PICK:
             activate_diablo()
-            # subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
             p.sleep(0.1)
             p.press('space')
         elif stage == "trade":
@@ -556,8 +519,6 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
 
 
 def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
-    # log(f"start picking items, attempt #{attempted + 1}")
-
     blue_rgb = np.array([89, 96, 241])
     yellow_rgb = np.array([233, 231, 77])
     orange_rgb = np.array([243, 143, 36])
@@ -628,7 +589,7 @@ def auto_fishing(location, fish_type, brightness=50, stop=None):
 
 
 def log(contents):
-    print(contents)
+    print(f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}")
 
 
 if __name__ == '__main__':
@@ -648,6 +609,7 @@ if __name__ == '__main__':
 
         auto_fishing(location, fish_type)
     else:
+        import threading
         root = GUI()
 
         def start_auto_fishing():
@@ -683,7 +645,7 @@ if __name__ == '__main__':
             root.trade_button["state"] = "normal"
 
         def log(contents):
-            root.log_text.insert('end', f"{contents}\n")
+            root.log_text.insert('end', f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}\n")
             root.log_text.see('end')
 
         root.fish_button.config(command=lambda: start_fishing())

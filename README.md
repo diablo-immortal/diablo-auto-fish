@@ -77,7 +77,12 @@ python -m pip install -r requirements.txt
 - Choose fish type and location, and click Auto Fishing.
 - To stop, switch out and click Stop Fishing.
 
+
 ## For Mac Users using sideloadly to run Diablo Immortal on M1/M2 Macs:
 
 To be completed...
 
+
+## Contact
+
+If you have any questions or concerns, please contact me at q30zhang@gmail.com.

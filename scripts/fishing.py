@@ -5,9 +5,6 @@ from datetime import datetime
 from PIL import Image
 from gui import GUI
 
-if sys.platform == "darwin":
-    from locate_im import locate_on_screen, pixel_match_color
-
 Box = collections.namedtuple('Box', 'left top width height')
 
 for filename in os.listdir(os.getcwd()):
@@ -49,13 +46,29 @@ im_data = {
     "shop":             os.path.join(RESOURCES_DIR, "shop.png"),
     "amount":           os.path.join(RESOURCES_DIR, "amount.png"),
     "9":                os.path.join(RESOURCES_DIR, "number9.png"),
-    "buy":              os.path.join(RESOURCES_DIR, "buy.png")
+    "buy":              os.path.join(RESOURCES_DIR, "buy.png"),
+    "find_npc":         os.path.join(RESOURCES_DIR, "find_npc.png"),
+    "navigate":         os.path.join(RESOURCES_DIR, "navigate.png"),
+    "icon_fish":        os.path.join(RESOURCES_DIR, "icon_fish.png"),
+    "icon_bs":          os.path.join(RESOURCES_DIR, "icon_bs.png"),
+    "npc_fish":         os.path.join(RESOURCES_DIR, "npc_fish.png"),
+    "npc_bs":           os.path.join(RESOURCES_DIR, "npc_bs.png"),
+    "services":         os.path.join(RESOURCES_DIR, "services.png"),
+    "white_unticked":   os.path.join(RESOURCES_DIR, "white_unticked.png"),
+    "blue_unticked":    os.path.join(RESOURCES_DIR, "blue_unticked.png"),
+    "yellow_unticked":  os.path.join(RESOURCES_DIR, "yellow_unticked.png"),
+    "no_white":         os.path.join(RESOURCES_DIR, "no_white.png"),
+    "no_blue":          os.path.join(RESOURCES_DIR, "no_blue.png"),
+    "no_yellow":        os.path.join(RESOURCES_DIR, "no_yellow.png"),
+    "salvage":          os.path.join(RESOURCES_DIR, "salvage.png")
 }
 
+NPC_NAME_COLOR = (248, 198, 134)
 FISH_TYPE_COLOR = (125, 125, 120)
 FISH_TYPE_X_COORD_TOLERANCE = 100
 
 if sys.platform == 'darwin':
+    from locate_im import locate_on_screen, pixel_match_color
     import subprocess
     FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1050}
     FISH_TYPE_Y_COORD = 137
@@ -262,7 +275,7 @@ def check_status(prev_status, fish_type="yellow"):
     return None, None
 
 
-def check(status, confidence=0.9, region_boarder=10):
+def check(status, confidence=0.9, region_boarder_x=10, region_boarder_y=10):
     if sys.platform == "win32" and status in [TALK, PICK]:
         return None
     global boxes
@@ -274,10 +287,10 @@ def check(status, confidence=0.9, region_boarder=10):
         if status not in boxes:
             boxes.update({status: box})
         if status not in regions:
-            regions.update({status: [int(n) for n in [box.left - region_boarder,
-                                                      box.top - region_boarder,
-                                                      box.width + 2 * region_boarder,
-                                                      box.height + 2 * region_boarder]]})
+            regions.update({status: [int(n) for n in [box.left - region_boarder_x,
+                                                      box.top - region_boarder_y,
+                                                      box.width + 2 * region_boarder_x,
+                                                      box.height + 2 * region_boarder_y]]})
             with open(os.path.join(RESOURCES_DIR, "regions.json"), 'w') as f:
                 json.dump(regions, f)
     return box
@@ -289,6 +302,7 @@ def fish(fish_type="yellow", brightness=50, stop=None):
             return False
     prev_status = ''
     pickup_attempted = 0
+    last_pickup_time = time.time()
     fishing_attempted = 0
     n_standby_cont = 0
     activate_diablo()
@@ -319,6 +333,8 @@ def fish(fish_type="yellow", brightness=50, stop=None):
             else:
                 click_box(box, button=p.SECONDARY)
             fishing_attempted += 1
+            if time.time() - last_pickup_time > 600:
+                pickup_attempted = 0
             if prev_status == STANDBY:
                 n_standby_cont += 1
             else:
@@ -337,10 +353,11 @@ def fish(fish_type="yellow", brightness=50, stop=None):
                 if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
         elif status == WAITING and sys.platform == "win32" and pickup_attempted < PICKUP_LIMIT:
+            last_pickup_time = time.time()
             if pickup_win32(pickup_attempted):
                 pickup_attempted += 1
             else:
-                pickup_attempted = 10
+                pickup_attempted = PICKUP_LIMIT
         prev_status = status
     return True
 
@@ -381,11 +398,12 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
         status, box = check_npc_or_fish()
 
         if status == INTERRUPTED_PARTY:
-            x = box.left / 2 + random.random() * box.width / 2
-            y = box.top / 2 + random.random() * box.height / 2
+            # x = box.left / 2 + random.random() * box.width / 2
+            # y = box.top / 2 + random.random() * box.height / 2
             activate_diablo()
-            p.sleep(0.1)
-            p.click(x, y)
+            click_box(box)
+            # p.sleep(0.1)
+            # p.click(x, y)
         elif status == TALK and stage == "trade":
             trade_fish()
             stage = "buy"
@@ -401,13 +419,11 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             p.press('space')
         elif stage == "trade":
             walk(key_to_npc)
-            p.sleep(0.1)
         elif stage == "buy":
             walk(key_to_npc, 0.05)
-            p.sleep(0.1)
         elif stage == "back":
             walk(key_to_fish)
-            p.sleep(0.1)
+        p.sleep(0.5)
 
 
 def trade_fish():
@@ -446,10 +462,10 @@ def buy_bait():
     p.click(x0//2 + 1010, y0//2 + 170)
 
 
-def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confidence=0.9, region_boarder=10,
-                offset=(0.2, 0.2, -0.2, -0.2)):
+def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confidence=0.9, region_boarder_x=10,
+                region_boarder_y=10, offset=(0.2, 0.2, -0.2, -0.2)):
     while True:
-        box = check(im_state, confidence=confidence, region_boarder=region_boarder)
+        box = check(im_state, confidence=confidence, region_boarder_x=region_boarder_x, region_boarder_y=region_boarder_y)
         if box:
             p.sleep(1)
             click_box(box, clicks, interval, offset_left=offset[0], offset_top=offset[1], offset_right=offset[2], offset_bottom=offset[3])
@@ -458,7 +474,7 @@ def click_image(im_state, start_time, max_time, clicks=1, interval=0.01, confide
             return 1  # fail
 
 
-def find_npc(npc_color_rgb=np.array([248, 198, 134])):
+def find_npc(npc_color_rgb=np.array(NPC_NAME_COLOR)):
     im = p.screenshot()
     matches = np.argwhere((np.abs(np.array(im)[:, :, :3] - npc_color_rgb) <= 5).all(axis=2))
     if matches.shape[0] > 50:
@@ -511,7 +527,7 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
         error += click_image("shop", time.time(), 3)
         error += click_image("amount", time.time(), 3, offset=(0.2, 0.7, -0.2, -0.1))
         error += click_image("9", time.time(), 3, clicks=3, interval=0.5)
-        error += click_image("buy", time.time(), 3, confidence=0.95, region_boarder=15)
+        error += click_image("buy", time.time(), 3, confidence=0.95, region_boarder_x=15, region_boarder_y=15)
         error += click_image("x", time.time(), 3)
         if error > 0:
             return trade_with_gui(0, attempts_sell - 1)
@@ -555,6 +571,141 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
     return True
 
 
+def salvage(tries=3, stuck_limit=30, navigation_time_limit=60, stop=None):
+    if stop is None:
+        def stop():
+            return False
+    if tries == 0:
+        return False
+    stuck_count = 0
+    activate_diablo()
+
+    if sys.platform == "darwin":
+        pass
+    else:
+        stage = "opening_map"
+        prev_stage = ""
+        destination = "bs"  # blacksmith or fish
+        t = 0
+        minimap_box = Box(1620, 10, 220, 150)
+        npc_box = None
+        while True:
+            if stop():
+                return False
+            for status in [INTERRUPTED_LAIR, INTERRUPTED_PARTY, INTERRUPTED_RAID]:
+                box = check(status)
+                if box:
+                    click_box(box)
+                    break
+            if box:
+                continue
+
+            if stage == "opening_map":
+                box = check("find_npc")
+                if box:
+                    click_box(box)
+                    stage = "find_npc"
+                else:
+                    click_box(minimap_box)
+            elif stage == "find_npc":
+                box = check(f"icon_{destination}", region_boarder_y=600)
+                if box:
+                    click_box(box)
+                    stage = "found_npc"
+                else:
+                    p.scroll(-1, x=250+int(random.random()*100), y=400+int(random.random()*200))
+            elif stage == "found_npc":
+                box = check("navigate")
+                if box:
+                    click_box(box)
+                    p.moveTo(960, 1000)
+                    stage = "navigating"
+                    t = time.time()
+            elif stage == "navigating":
+                p.sleep(5)
+                new_npc_box = find_npc_2(im_data[f"npc_{destination}"])
+                if npc_box and new_npc_box:
+                    if match_box(npc_box, new_npc_box):
+                        stage = "reached_npc"
+                npc_box = new_npc_box
+            elif stage == "reached_npc":
+                if destination == "bs":
+                    stage = "salv"
+                    destination = "fish"
+                else:  # back to fish
+                    p.click(970, 670, button=p.MIDDLE)  # test: trying to go to the ideal spot
+                    return True
+            elif stage == "salv":
+                click_center(npc_box)
+                stage = "dialog_bs"
+            elif stage == "dialog_bs":
+                box = check("services")
+                if box:
+                    click_box(box)
+                    stage = "salvaging"
+            elif stage == "salvaging":
+                salvage_attempts_left = 5
+                while stage != "salvaged":
+                    for item_color in ["white", "blue", "yellow"]:
+                        box = check(f"{item_color}_unticked")
+                        if box:
+                            click_box(box)
+                        p.sleep(1)
+                    box = check("salvage", confidence=0.95)
+                    if box:
+                        click_box(box)
+                        p.sleep(1)
+                    salvage_attempts_left -= 1
+                    if (check("no_white") and check("no_blue") and check("no_yellow")) or salvage_attempts_left <= 0:
+                        stage = "salvaged"
+            elif stage == "salvaged":
+                box = check("x")
+                if box:
+                    click_box(box)
+                    stage = "opening_map"
+
+            if prev_stage == stage and stage != "navigating":
+                stuck_count += 1
+            if stage == "navigating" and time.time() - t > navigation_time_limit:
+                stuck_count = stuck_limit + 1
+            prev_stage = stage
+            log(stuck_count)
+            log(stage)
+            if stuck_count > stuck_limit:
+                log(f"salvage got stuck at stage: {stage}, tries left: {tries}")
+                p.click(960, 1000)
+                p.sleep(0.5)
+                cross_box = check("x", confidence=0.8)
+                if cross_box:
+                    click_box(cross_box)
+                return salvage(tries=tries - 1)
+            p.sleep(1)
+
+
+def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR), color_threshold=30):
+    # find_region = (700, 200, 500, 300)
+    find_region = None
+    im_array = np.array(p.screenshot(region=find_region))
+    im_array[np.where((np.abs(np.array(im_array) - npc_color_rgb) >= color_threshold).any(axis=2))] = np.array([0, 0, 0])
+    filtered_im = Image.fromarray(im_array)
+    return p.locate(npc_name_im, filtered_im, confidence=0.6)
+
+
+def match_box(box1, box2, max_diff=5):
+    log(box1)
+    log(box2)
+    return (np.abs(np.array([[1, 0, 0, 0],
+                             [0, 1, 0, 0],
+                             [1, 0, 1, 0],
+                             [0, 1, 0, 1]]).dot(np.array(box1) - np.array(box2))) <= max_diff).all()
+
+
+def click_center(box):
+    x = box.left + box.width // 2
+    y = box.top + box.height // 2
+    p.click(x, y)
+
+
 def alarm_legendary():
     log("there are legendary items you can't pick up")
 
@@ -582,8 +733,13 @@ def auto_fishing(location, fish_type, brightness=50, stop=None):
     if stop is None:
         def stop():
             return None
+    n = 0
     while True:
         fish_and_trade(location, fish_type, brightness, stop)
+        n += 1  # TODO: gui check bag full
+        if sys.platform == "win32" and n >= 4:
+            if salvage():
+                n = 0
         if stop():
             break
 
@@ -644,6 +800,24 @@ if __name__ == '__main__':
             root.auto_fish_button["state"] = "normal"
             root.trade_button["state"] = "normal"
 
+        def auto_salv():
+            root.not_fishing = False
+            args = (3, 30, 60, lambda: root.not_fishing)
+            root.thread = threading.Thread(target=salvage, args=args, daemon=True)
+            root.thread.start()
+            root.salv_button.config(text="Stop Salvaging", command=lambda: stop_salv())
+            root.auto_fish_button["state"] = "disabled"
+            root.trade_button["state"] = "disabled"
+            root.fish_button["state"] = "disabled"
+
+        def stop_salv():
+            root.not_fishing = True
+            root.thread.join()
+            root.salv_button.config(text="Auto Salvage", command=lambda: auto_salv())
+            root.auto_fish_button["state"] = "normal"
+            root.trade_button["state"] = "normal"
+            root.fish_button["state"] = "normal"
+
         def log(contents):
             root.log_text.insert('end', f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}\n")
             root.log_text.see('end')
@@ -651,6 +825,7 @@ if __name__ == '__main__':
         root.fish_button.config(command=lambda: start_fishing())
         root.trade_button.config(command=lambda: trade(root.loc_var.get()))
         root.auto_fish_button.config(command=lambda: start_auto_fishing())
+        root.salv_button.config(command=lambda: auto_salv())
 
         if sys.platform == "win32":
             for title in p.getAllTitles():

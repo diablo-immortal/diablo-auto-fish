@@ -56,5 +56,5 @@ class GUI(tk.Tk):
         self.auto_fish_button.grid(row=7, column=0, padx=10, pady=10, sticky=tk.W)
         self.trade_button.grid(row=7, column=1, padx=10, pady=10, sticky=tk.W)
         self.fish_button.grid(row=7, column=2, padx=10, pady=10, sticky=tk.W)
-        # self.salv_button.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W)
+        self.salv_button.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W)
 

@@ -60,7 +60,8 @@ im_data = {
     "no_white":         os.path.join(RESOURCES_DIR, "no_white.png"),
     "no_blue":          os.path.join(RESOURCES_DIR, "no_blue.png"),
     "no_yellow":        os.path.join(RESOURCES_DIR, "no_yellow.png"),
-    "salvage":          os.path.join(RESOURCES_DIR, "salvage.png")
+    "salvage":          os.path.join(RESOURCES_DIR, "salvage.png"),
+    "icon_bag":         os.path.join(RESOURCES_DIR, "icon_bag.png")
 }
 
 NPC_NAME_COLOR = (248, 198, 134)
@@ -423,7 +424,7 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             walk(key_to_npc, 0.05)
         elif stage == "back":
             walk(key_to_fish)
-        p.sleep(0.5)
+        p.sleep(1)
 
 
 def trade_fish():
@@ -543,7 +544,7 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
     max_y_offset = 150
     click_span = 120
     click_flex = 30
-    region = (470, 240, 980, 600)
+    region = (470, 240, 980, 600)  # (x, y, width, height)
     im = p.screenshot(os.path.join(TEMP_DIR, "items_check.png"), region=region)
     if pickup_blue:
         pts = np.argwhere((np.abs(np.array(im)[:, :, :3] - blue_rgb) <= color_threshold).all(axis=2) |
@@ -554,7 +555,7 @@ def pickup_win32(attempted=0, pickup_blue=True, legendary_alarm=False):
                           (np.abs(np.array(im)[:, :, :3] - blue_rgb) <= color_threshold).all(axis=2))
     if pts.shape[0] == 0:
         return False
-    top_left = pts.min(axis=0)
+    top_left = pts.min(axis=0)  # (row, col) <=> (y, x)
     height_width = pts.max(axis=0) - top_left
     click_region = (region[0] + top_left[1],            region[1] + top_left[0] + min_y_offset,
                     height_width[1],                    height_width[0] + max_y_offset - min_y_offset)
@@ -700,6 +701,44 @@ def match_box(box1, box2, max_diff=5):
                              [0, 1, 0, 1]]).dot(np.array(box1) - np.array(box2))) <= max_diff).all()
 
 
+def check_bag_capacity():
+    activate_diablo()
+    p.sleep(1)
+    box = check("icon_bag")
+    if box:
+        click_box(box)
+        t = time.time()
+        p.sleep(3)
+        box = check("x")
+        while not box and time.time() - t < 10:
+            p.sleep(1)
+            box = check("x")
+        if not box:
+            return None
+        if sys.platform == "darwin":
+            total_h = 76
+            subprocess.run(["screencapture", "-x", "-R" f"{x0//2+855},{y0//2+645},1,{total_h//2}",
+                            os.path.join(TEMP_DIR, "bag_cap.png")])
+            im = Image.open(os.path.join(TEMP_DIR, "bag_cap.png"))
+        else:
+            total_h = 70
+            im = p.screenshot(region=(1560, 947, 1, total_h))
+
+        im_array = np.array(im)
+        im_gray = np.dot(im_array[:, 0, :3], [0.2989, 0.5870, 0.1140])
+        diff = np.diff(im_gray)
+        if diff.max() > 15:
+            capacity = min(diff.argmax() / total_h + 0.02, 1.0)
+        else:
+            if im_array[:, 0, 0].mean() > 100:
+                capacity = 0.0
+            else:
+                capacity = 1.0
+        click_box(box)
+        return capacity
+    return None
+
+
 def click_center(box):
     x = box.left + box.width // 2
     y = box.top + box.height // 2
@@ -719,27 +758,39 @@ def trade(location):
         trade_with_gui()
 
 
-def fish_and_trade(location, fish_type, brightness=50, stop=None):
+def fish_and_trade(location, fish_type, auto_salv, salv_capacity, brightness=50, stop=None):
     if stop is None:
         def stop():
             return False
     if fish(fish_type, brightness, stop):
         p.sleep(1)
+        # check bag and salvage if full
+        if sys.platform == "win32" and auto_salv:
+            bag_capacity = check_bag_capacity()
+            p.sleep(1)
+            if bag_capacity and bag_capacity < salv_capacity / 100:
+                if salvage():
+                    log("Successfully salvaged items.")
+                else:
+                    log("Failed to salvage.")
+                    # alert salvage failure?
+                p.sleep(1)
+
         trade(location)
         p.sleep(1)
 
 
-def auto_fishing(location, fish_type, brightness=50, stop=None):
+def auto_fishing(location, fish_type, auto_salv=False, salv_capacity=20, brightness=50, stop=None):
     if stop is None:
         def stop():
             return None
-    n = 0
+    # n = 0
     while True:
-        fish_and_trade(location, fish_type, brightness, stop)
-        n += 1  # TODO: gui check bag full
-        if sys.platform == "win32" and n >= 4:
-            if salvage():
-                n = 0
+        fish_and_trade(location, fish_type, auto_salv, salv_capacity, brightness, stop)
+        # n += 1  # TODO: graphically check bag full
+        # if sys.platform == "win32" and n >= cycle_b4_salv:
+        #     if salvage():
+        #         n = 0
         if stop():
             break
 
@@ -770,7 +821,8 @@ if __name__ == '__main__':
 
         def start_auto_fishing():
             root.not_fishing = False
-            args = (root.loc_var.get(), root.type_var.get(), root.bright_var.get(), lambda: root.not_fishing)
+            args = (root.loc_var.get(), root.type_var.get(), root.auto_salv_var.get(),
+                    root.salv_capacity_var.get(), root.bright_var.get(), lambda: root.not_fishing)
             root.thread = threading.Thread(target=auto_fishing, args=args, daemon=True)
             root.thread.start()
             root.auto_fish_button.config(text="Stop Fishing", command=lambda: stop_auto_fishing())

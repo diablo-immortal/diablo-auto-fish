@@ -351,6 +351,8 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
         if error > 0:
             return trade_with_gui(0, attempts_sell - 1)
         p.sleep(1)
+        DIKeys.press(hexKeyMap.DIK_Q)
+        p.sleep(0.1)
         DIKeys.press(hexKeyMap.DIK_A, 0.5)
         p.sleep(0.1)
         DIKeys.press(hexKeyMap.DIK_D, 1)
@@ -630,7 +632,13 @@ if __name__ == '__main__':
 
         def start_auto_fishing():
             root.not_fishing = False
-            args = (root.loc_var.get(), root.type_var.get(), root.fish_key_bind.get(), root.auto_salv_var.get(),
+            if sys.platform == "darwin":
+                fish_key_bind = None
+            else:
+                fish_key_bind = root.get_fishing_key(hexKeyMap.DI_KEYS)
+                if fish_key_bind is None:
+                    return 1
+            args = (root.loc_var.get(), root.type_var.get(), fish_key_bind, root.auto_salv_var.get(),
                     root.salv_capacity_var.get(), root.bright_var.get(), lambda: root.not_fishing)
             root.thread = threading.Thread(target=auto_fishing, args=args, daemon=True)
             root.thread.start()
@@ -649,10 +657,10 @@ if __name__ == '__main__':
 
         def start_fishing():
             root.not_fishing = False
-            fish_key_bind = root.fish_key_bind.get()
-            if fish_key_bind == "other":
-                fish_key_bind = root.fish_key_bind_other.get().lower()
-            args = (root.type_var.get(), fish_key_bind, root.bright_var.get(), lambda: root.not_fishing)
+            # fish_key_bind = root.fish_key_bind.get()
+            # if fish_key_bind == "other":
+            #     fish_key_bind = root.fish_key_bind_other.get().lower()
+            args = (root.type_var.get(), root.get_fishing_key(hexKeyMap.DI_KEYS), root.bright_var.get(), lambda: root.not_fishing)
             root.thread = threading.Thread(target=fish, args=args, daemon=True)
             root.thread.start()
             root.fish_button.config(text="Stop Fishing", command=lambda: stop_fishing())

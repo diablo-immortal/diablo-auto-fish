@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 from datetime import datetime
 
 
@@ -88,6 +89,16 @@ class GUI(tk.Tk):
         self.trade_button.grid(row=11, column=1, padx=10, pady=10, sticky=tk.W)
         self.fish_button.grid(row=11, column=2, padx=10, pady=10, sticky=tk.W)
         self.salv_button.grid(row=12, column=0, padx=10, pady=10, sticky=tk.W)
+
+    def get_fishing_key(self, allowed_keys):
+        fish_key_bind = self.fish_key_bind.get()
+        if fish_key_bind == "other":
+            fish_key_bind = self.fish_key_bind_other.get().lower()
+        if fish_key_bind in allowed_keys:
+            return fish_key_bind
+        messagebox.showerror("Fishing key invalid",
+                             "The fishing key is not valid. Enter a valid key or choose from the option menu.")
+        return None
 
     def log(self, contents):
         self.log_text.insert('end', f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}\n")

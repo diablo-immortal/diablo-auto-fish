@@ -44,7 +44,7 @@ python -m pip install -r requirements.txt
   - 关闭所有特效
 - 按键设置：
   - 移动/攻击：**不要**设置鼠标左键
-  - 钓鱼技能：鼠标右键
+  - 钓鱼技能：~~鼠标右键~~ <span style="color:red">现在可以设置键盘按键，默认为5</span>
   - **鼠标左键不要设置任何技能和操作**
 - 站在钓鱼点，注意不要离NPC太远，要在可以对话的距离内。
 
@@ -59,7 +59,7 @@ python -m pip install -r requirements.txt
   - Turn off all effects.
 - Set key bindings: 
   - Move/Attack: anything **except** Mouse left (primary) button
-  - Fishing Skills: Mouse right (secondary) button
+  - Fishing Skills: ~~Mouse right (secondary) button~~ <span style="color:red">Updated: now support keyboard keys, default: 5</span>
   - **Do not set Mouse left (primary) button for any skills**
 - Stand your character at a fishing spot, preferably not ashwold because there's a mob coming over to attack you once in a while.
 
@@ -76,6 +76,8 @@ python -m pip install -r requirements.txt
 - While the game is running, switch out to the folder that contains `fishing.py`, double-click to open;
 - Choose fish type and location, and click Auto Fishing.
 - To stop, switch out and click Stop Fishing.
+- When Auto Fishing, it checks your bag in the end of every fishing cycle (20 fishes) and performs Auto Salvage if bag capacity is below the set percent.
+- Auto Fishing in the map Frozen Tundra is not tested yet.
 
 
 ## For Mac Users using sideloadly to run Diablo Immortal on M1/M2 Macs:

@@ -28,9 +28,21 @@ def screenshot(image_name=None, region=None):
     return im
 
 
-def locate_all(needle_image, haystack_image, limit=10000, confidence=0.999):
+def locate_all(needle_image, haystack_image, limit=10000, confidence=0.999, show=False):
+    if type(needle_image) == str:
+        needle_image = cv2.imread(needle_image)
+        if needle_image is None:
+            raise FileNotFoundError("can't open/read file: check file path/integrity")
+    if type(haystack_image) == str:
+        haystack_image = cv2.imread(haystack_image)
+        if haystack_image is None:
+            raise FileNotFoundError("can't open/read file: check file path/integrity")
 
     needle_height, needle_width = needle_image.shape[:2]
+    from PIL import Image
+    if show:
+        Image._show(Image.fromarray(needle_image[:,:,-1]))
+        Image._show(Image.fromarray(haystack_image[:,:,-1]))
 
     if (haystack_image.shape[0] < needle_image.shape[0] or haystack_image.shape[1] < needle_image.shape[1]):
         # avoid semi-cryptic OpenCV error below if bad size
@@ -50,6 +62,12 @@ def locate_all(needle_image, haystack_image, limit=10000, confidence=0.999):
     # return matchx, matchy, needle_width, needle_height
     for x, y in zip(matchx, matchy):
         yield Box(x, y, needle_width, needle_height)
+
+
+def locate(needle_image, haystack_image, limit=10000, confidence=0.999):
+    results = tuple(locate_all(needle_image, haystack_image, limit, confidence))
+    if len(results) > 0:
+        return results[0]
 
 
 def locate_all_on_screen(im_name, region=None, confidence=0.999):

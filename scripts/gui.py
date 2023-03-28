@@ -1,4 +1,5 @@
 import tkinter as tk
+from datetime import datetime
 
 
 class GUI(tk.Tk):
@@ -7,6 +8,7 @@ class GUI(tk.Tk):
         self.thread = None
         self.not_fishing = True
         self.title("Auto Fish")
+        self.fish_key_bind_options = ['5', '6', '7', '8', '9', '0', 'mouseRight', 'other']
         # Create a label for the fish type
         type_label = tk.Label(self, text="Select a fish type:")
         type_label.grid(row=0, column=0, padx=10, pady=10, columnspan=3, sticky=tk.W)
@@ -39,7 +41,7 @@ class GUI(tk.Tk):
         self.auto_salv_var = tk.BooleanVar()
         self.auto_salv_var.set(True)
         self.salv_capacity_var = tk.IntVar()
-        self.salv_capacity_var.set(20)
+        self.salv_capacity_var.set(25)
         auto_salvage_label = tk.Label(self, text="Auto Salvage Settings:")
         auto_salvage_label.grid(row=4, column=0, padx=10, pady=10, columnspan=3, sticky=tk.W)
         auto_salvage_checkbtn = tk.Checkbutton(self, text="Auto Salvage", variable=self.auto_salv_var)
@@ -59,16 +61,34 @@ class GUI(tk.Tk):
         bright_scale = tk.Scale(self, variable=self.bright_var, from_=0, to=100, orient=tk.HORIZONTAL, length=100)
         bright_scale.grid(row=7, column=0, padx=10, pady=0, columnspan=3, sticky='we')
 
+        # Create a drop down menu to choose fishing keybind
+        key_bind_label = tk.Label(self, text="Select the in-game key bind to fishing:")
+        key_bind_label.grid(row=8, column=0, padx=10, pady=10, columnspan=3, sticky=tk.W)
+        self.fish_key_bind = tk.StringVar()
+        self.fish_key_bind.set('5')
+        self.key_bind_menu = tk.OptionMenu(self, self.fish_key_bind, *self.fish_key_bind_options)
+        self.key_bind_menu.grid(row=9, column=0, padx=10, pady=10, sticky='we')
+        key_bind_other_label = tk.Label(self, text="If other, specify here:")
+        key_bind_other_label.grid(row=9, column=1, padx=10, pady=10, sticky=tk.E)
+        self.fish_key_bind_other = tk.StringVar()
+        self.fish_key_bind_other.set('')
+        self.fish_key_bind_other_entry = tk.Entry(self, textvariable=self.fish_key_bind_other)
+        self.fish_key_bind_other_entry.grid(row=9, column=2, padx=10, pady=10, sticky='we')
+
+
         # Create a text box to display the log
         self.log_text = tk.Text(self, height=10, width=50)
-        self.log_text.grid(row=8, column=0, padx=10, pady=0, columnspan=3, sticky='we')
+        self.log_text.grid(row=10, column=0, padx=10, pady=0, columnspan=3, sticky='we')
 
         self.auto_fish_button = tk.Button(self, text="Auto Fishing", width=15, justify=tk.CENTER)
         self.trade_button = tk.Button(self, text="Trade Fish", width=15, justify=tk.CENTER)
         self.fish_button = tk.Button(self, text="Fish 1 Round", width=15, justify=tk.CENTER)
         self.salv_button = tk.Button(self, text="Auto Salvage", width=15, justify=tk.CENTER)
-        self.auto_fish_button.grid(row=9, column=0, padx=10, pady=10, sticky=tk.W)
-        self.trade_button.grid(row=9, column=1, padx=10, pady=10, sticky=tk.W)
-        self.fish_button.grid(row=9, column=2, padx=10, pady=10, sticky=tk.W)
-        self.salv_button.grid(row=10, column=0, padx=10, pady=10, sticky=tk.W)
+        self.auto_fish_button.grid(row=11, column=0, padx=10, pady=10, sticky=tk.W)
+        self.trade_button.grid(row=11, column=1, padx=10, pady=10, sticky=tk.W)
+        self.fish_button.grid(row=11, column=2, padx=10, pady=10, sticky=tk.W)
+        self.salv_button.grid(row=12, column=0, padx=10, pady=10, sticky=tk.W)
 
+    def log(self, contents):
+        self.log_text.insert('end', f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}\n")
+        self.log_text.see('end')

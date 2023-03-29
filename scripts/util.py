@@ -55,7 +55,6 @@ im_data = {
     "icon_bag":         os.path.join(RESOURCES_DIR, "icon_bag.png")
 }
 
-NPC_NAME_COLOR = (248, 198, 134)
 FISH_TYPE_COLOR = (125, 125, 120)
 FISH_TYPE_X_COORD_TOLERANCE = 100
 
@@ -67,6 +66,7 @@ if sys.platform == 'darwin':
     MAX_FISHING_TIME = 20
     MAX_TIMEOUT = 2
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
+    NPC_NAME_COLOR = (230, 190, 135)
 
     pos = subprocess.run(["osascript", "-e",
                           'tell application "System Events" to tell process "Diablo Immortal" to get position of window 1'],
@@ -98,6 +98,7 @@ else:
     MAX_FISHING_TIME = 40
     MAX_TIMEOUT = 5
     PICKUP_LIMIT = 10
+    NPC_NAME_COLOR = (248, 198, 134)
     KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
     BACK_TO_FISHING_COORD = {'bilefen': (970, 670), 'tundra': (1100, 670), 'ashwold': (1400, 385)}
 
@@ -224,10 +225,11 @@ def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):
         color_threshold = 30  # could tune higher or lower depending on brightness.
         rgb_image = True
     im_array = np.array(screenshot(region=find_region))  # uses Pillow for windows, so image in RGB mode
-    # Image.fromarray(im_array).save("npc_im_black.png")
     if rgb_image:
         im_array = im_array[:, :, ::-1]  # convert RGB to BGR
     im_array[np.where((np.abs(im_array - npc_color_rgb[::-1]) >= color_threshold).any(axis=2))] = np.array([0, 0, 0])
+    # from PIL import Image
+    # Image.fromarray(im_array[:,:,::-1]).save("npc_im_black.png")
     return locate(npc_name_im, im_array, confidence=0.6)
 
 

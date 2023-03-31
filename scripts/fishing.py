@@ -305,8 +305,8 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
     if attempts_trade > 0:
         p.sleep(1)
         log("selling based on gui")
-        # position = find_npc()
-        position = find_npc_2(im_data["npc_fish"])
+        position = find_npc()
+        # position = find_npc_2(im_data["npc_fish"])
         if not position:
             return trade_with_gui(attempts_trade - 1)
         p.click(position)
@@ -337,8 +337,8 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
                     click_box(box)
             if not box:
                 break
-        # position = find_npc()
-        position = find_npc_2(im_data["npc_fish"])
+        position = find_npc()
+        # position = find_npc_2(im_data["npc_fish"])
         if not position:
             return trade_with_gui(0, attempts_sell - 1)
         p.click(position)
@@ -463,7 +463,8 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
             else:  # back to fish
                 if sys.platform == "win32":
                     log(f"debug: {location}")
-                    p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
+                    # DIKeys.press(KEY_MOVE.get("location"), 0.3)
+                    # p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
                 return True
         elif stage == "salv":
             if sys.platform == "darwin":

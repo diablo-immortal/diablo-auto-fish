@@ -99,7 +99,7 @@ else:
     MAX_TIMEOUT = 5
     PICKUP_LIMIT = 10
     NPC_NAME_COLOR = (248, 198, 134)
-    KEY_MOVE = {'bilefen': ('w', 's'), 'tundra': ('w', 's'), 'ashwold': ('a', 'w')}
+    KEY_MOVE = {'bilefen': hexKeyMap.DIK_S, 'tundra': hexKeyMap.DIK_S, 'ashwold': hexKeyMap.DIK_D}
     BACK_TO_FISHING_COORD = {'bilefen': (970, 670), 'tundra': (1100, 670), 'ashwold': (1400, 385)}
 
     window = p.getWindowsWithTitle("Diablo Immortal")[0]
@@ -213,6 +213,14 @@ def click_center(box):
     x = box.left + box.width // 2
     y = box.top + box.height // 2
     p.click(x, y)
+
+
+def find_npc(npc_color_rgb=np.array(NPC_NAME_COLOR)):
+    im = p.screenshot()
+    matches = np.argwhere((np.abs(np.array(im)[:, :, :3] - npc_color_rgb) <= 5).all(axis=2))
+    if matches.shape[0] > 50:
+        position = np.median(matches, axis=0)[::-1]
+        return int(position[0]), int(position[1])
 
 
 def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):

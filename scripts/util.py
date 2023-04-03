@@ -1,19 +1,21 @@
 import collections, sys, os, random, time, json
 from datetime import datetime
+
+DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
 try:
     from pytesseract import pytesseract
     import pyautogui as p
     import numpy as np
 except ImportError:
     import subprocess
-    subprocess.run(["python", "-m", "pip", "install", "-r", "../requirements.txt"])
+    subprocess.run(["python", "-m", "pip", "install", "-r", os.path.join(DIR, "requirements.txt")])
     import pyautogui as p
     import numpy as np
     from pytesseract import pytesseract
 
 Box = collections.namedtuple('Box', 'left top width height')
 
-DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 RESOURCES_DIR = os.path.join(DIR, "resources")
 TEMP_DIR = os.path.join(DIR, "temp_im")
 

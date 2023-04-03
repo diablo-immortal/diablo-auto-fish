@@ -451,7 +451,8 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 t = time.time()
         elif stage == "navigating":
             p.sleep(5)
-            new_npc_box = find_npc_2(im_data[f"npc_{destination}"])
+            # new_npc_box = find_npc_2(im_data[f"npc_{destination}"])
+            new_npc_box = find_npc_3(destination)
             if npc_box and new_npc_box:
                 if match_box(npc_box, new_npc_box):
                     stage = "reached_npc"
@@ -464,7 +465,7 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 if sys.platform == "win32":
                     log(f"debug: {location}")
                     # DIKeys.press(KEY_MOVE.get("location"), 0.3)
-                    # p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
+                    p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
                 return True
         elif stage == "salv":
             if sys.platform == "darwin":
@@ -514,7 +515,10 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
         log(stage)
         if stuck_count > stuck_limit:
             log(f"salvage got stuck at stage: {stage}, tries left: {tries}")
-            p.click(960, 1000)
+            if sys.platform == "darwin":
+                p.press("space")
+            else:
+                p.click(960, 1000)
             p.sleep(0.5)
             cross_box = check("x", confidence=0.8)
             if cross_box:
@@ -572,6 +576,8 @@ def trade(location):
         trade_fish_buy_bait_go_back(key_to_npc, key_to_fish)
     else:
         trade_with_gui()
+        if location == "ashwold":
+            DIKeys.press(hexKeyMap.DIK_W, 1.0)
 
 
 def fish_and_trade(location, fish_type, fish_key, auto_salv, salv_capacity, brightness=50, stop=None):

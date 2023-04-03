@@ -1,7 +1,15 @@
-import pyautogui as p
-import numpy as np
 import collections, sys, os, random, time, json
 from datetime import datetime
+try:
+    from pytesseract import pytesseract
+    import pyautogui as p
+    import numpy as np
+except ImportError:
+    import subprocess
+    subprocess.run(["python", "-m", "pip", "install", "-r", "../requirements.txt"])
+    import pyautogui as p
+    import numpy as np
+    from pytesseract import pytesseract
 
 Box = collections.namedtuple('Box', 'left top width height')
 
@@ -155,7 +163,7 @@ def cast_fishing_rod(key, box):
         DIKeys.press(hexKeyMap.DI_KEYS[key])
 
 
-def check(status, confidence=0.9, region_boarder_x=10, region_boarder_y=10):
+def check(status, confidence=0.85, region_boarder_x=20, region_boarder_y=20):
     if sys.platform == "win32" and status in [TALK, PICK]:
         return None
     global boxes
@@ -224,6 +232,42 @@ def find_npc(npc_color_rgb=np.array(NPC_NAME_COLOR)):
 
 
 def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):
+    # if sys.platform == "darwin":
+    #     find_region = (x0, y0, 2100, 1630)
+    #     color_threshold = 40  # could tune higher or lower depending on brightness.
+    #     rgb_image = False  # screenshot uses opencv for macos, image in BGR mode.
+    # else:
+    #     find_region = None
+    #     color_threshold = 30  # could tune higher or lower depending on brightness.
+    #     rgb_image = True
+    # im_array = np.array(screenshot(region=find_region))  # uses Pillow for windows, so image in RGB mode
+    # if rgb_image:
+    #     im_array = im_array[:, :, ::-1]  # convert RGB to BGR
+    # im_array[np.where((np.abs(im_array - npc_color_rgb[::-1]) >= color_threshold).any(axis=2))] = np.array([0, 0, 0])
+    im_array = extract_color_from_screen(npc_color_rgb)
+    # from PIL import Image
+    # Image.fromarray(im_array[:,:,::-1]).save("npc_im_black.png")
+    return locate(npc_name_im, im_array, confidence=0.6)
+
+
+def find_npc_3(npc_name, npc_color_rgb=np.array(NPC_NAME_COLOR)):
+    full_name = {"fish": "Fisher", "bs": "Blacksmith"}[npc_name]
+    im_array = extract_color_from_screen(npc_color_rgb)
+    config = "-c tessedit_char_whitelist=aBceFhlkimrst"
+    if sys.platform == "win32":
+        pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+    try:
+        outputs = pytesseract.image_to_data(im_array, config=config, output_type=pytesseract.Output.DICT)
+        print(outputs)
+        if full_name in outputs["text"]:
+            i_row = outputs["text"].index(full_name)
+            return Box(outputs["left"][i_row], outputs["top"][i_row], outputs["width"][i_row], outputs["height"][i_row])
+    except pytesseract.TesseractNotFoundError:
+        log("Tesseract not installed. Follow the instruction on the project homepage.")
+        return locate(im_data[f"npc_{npc_name}"], im_array, confidence=0.5)
+
+
+def extract_color_from_screen(color_rgb: np.ndarray):
     if sys.platform == "darwin":
         find_region = (x0, y0, 2100, 1630)
         color_threshold = 40  # could tune higher or lower depending on brightness.
@@ -235,10 +279,8 @@ def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):
     im_array = np.array(screenshot(region=find_region))  # uses Pillow for windows, so image in RGB mode
     if rgb_image:
         im_array = im_array[:, :, ::-1]  # convert RGB to BGR
-    im_array[np.where((np.abs(im_array - npc_color_rgb[::-1]) >= color_threshold).any(axis=2))] = np.array([0, 0, 0])
-    # from PIL import Image
-    # Image.fromarray(im_array[:,:,::-1]).save("npc_im_black.png")
-    return locate(npc_name_im, im_array, confidence=0.6)
+    im_array[np.where((np.abs(im_array - color_rgb[::-1]) >= color_threshold).any(axis=2))] = np.array([0, 0, 0])
+    return im_array
 
 
 def log(contents):

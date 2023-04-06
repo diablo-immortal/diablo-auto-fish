@@ -8,12 +8,18 @@ Note: the script is for discussion and studying purpose and should not be used t
 
 ## For windows user:
 
+### $\color{red}\text{Featured Updates}$
+- Now support auto salvation (works much better with tesseract, see later sections for installation). With this function enabled, it checks bag capacity after each fishing cycle (when 20 fishes are obtained), and goes back to town to salvage if bag capacity is below the set level.
+- Now fishing key bind can be set to a custom keyboard key, with default of ‘5’ (this was fixed to mouse right button previously).
+- Items pickup was uptimized to reduce the chance of missing gold dropped.
+
 ### Requirements
 - Python 3 (python 3.10 tested)
 - numpy
 - opencv-python
 - Pillow
 - pyautogui
+- $\color{red}\text{pytesseract}$
 
 ### 安装
 - 安装Python 3；
@@ -24,6 +30,10 @@ cd <path-to-directory>
 python -m pip install -r requirements.txt
 ```
 
+- $\color{red}\text{安装Tesseract}$（识别图形中的文字，以找到NPC）：
+	- 下载[安装文件](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.1.20230401.exe) （或在[这里](https://github.com/UB-Mannheim/tesseract/wiki)下载）；
+	- 打开安装文件，按提示安装，$\color{red}\text{安装到路径：}$`C:/Program Files/Tesseract-OCR/`
+
 ### Installation
 - Install Python 3;
 - After cloning this repository to local, in command line (press WinKey + R and input cmd, then enter), run:
@@ -32,6 +42,10 @@ python -m pip install -r requirements.txt
 cd <path-to-directory>
 python -m pip install -r requirements.txt
 ```
+
+- $\color{red}\text{Install Tesseract}$
+  - Download [the installer](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.1.20230401.exe), or from [this link](https://github.com/UB-Mannheim/tesseract/wiki);
+  - Run the installer, make sure it is installed $\color{red}\text{in this directory}$: `C:/Program Files/Tesseract-OCR/`.
 
 ### 游戏内设定
 - 显示器分辨率设置为1920\*1080，游戏以**英文版**运行（以后或许支持中文游戏界面）；
@@ -44,7 +58,7 @@ python -m pip install -r requirements.txt
   - 关闭所有特效
 - 按键设置：
   - 移动/攻击：**不要**设置鼠标左键
-  - 钓鱼技能：~~鼠标右键~~ <span style="color:red">现在可以设置键盘按键，默认为5</span>
+  - 钓鱼技能：~~鼠标右键~~ $\color{red}\text{现在可以设置键盘按键，默认为5}$
   - **鼠标左键不要设置任何技能和操作**
 - 站在钓鱼点，注意不要离NPC太远，要在可以对话的距离内。
 
@@ -59,7 +73,7 @@ python -m pip install -r requirements.txt
   - Turn off all effects.
 - Set key bindings: 
   - Move/Attack: anything **except** Mouse left (primary) button
-  - Fishing Skills: ~~Mouse right (secondary) button~~ <span style="color:red">Updated: now support keyboard keys, default: 5</span>
+  - Fishing Skills: ~~Mouse right (secondary) button~~ $\color{red}\text{Updated: now support keyboard keys, default: 5}$
   - **Do not set Mouse left (primary) button for any skills**
 - Stand your character at a fishing spot, preferably not ashwold because there's a mob coming over to attack you once in a while.
 

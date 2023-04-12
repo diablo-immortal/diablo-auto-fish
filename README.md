@@ -32,7 +32,7 @@ python -m pip install -r requirements.txt
 
 - $\color{red}\text{安装Tesseract}$（识别图形中的文字，以找到NPC）：
 	- 下载[安装文件](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.1.20230401.exe) （或在[这里](https://github.com/UB-Mannheim/tesseract/wiki)下载）；
-	- 打开安装文件，按提示安装，$\color{red}\text{安装到路径}$: `C:/Program Files/Tesseract-OCR/`
+	- 打开安装文件，按提示安装。注意确保 $\color{red}\text{安装路径}$ 为：`C:/Program Files/Tesseract-OCR/`
 
 ### Installation
 - Install Python 3;

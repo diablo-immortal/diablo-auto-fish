@@ -1,13 +1,5 @@
-from PIL import Image
 from gui import GUI
 from util import *
-
-# width = subprocess.run(["osascript", "-e",
-#                         'tell application "System Events" to tell process "Diablo Immortal" to get size of window 1'],
-#                        stdout=subprocess.PIPE)
-# dx, dy = [int(n) for n in width.stdout.decode("utf-8").strip().split(", ")]
-#
-# whole_region = [n * 2 for n in [x0, y0, dx, dy]]
 
 clear_temp_screenshots()
 
@@ -15,8 +7,9 @@ clear_temp_screenshots()
 def pull(brightness=50):
     # t0 = time.time()
     if sys.platform == "darwin":
-        subprocess.run(["screencapture", "-x", "-R" f"{x0//2+306},{y0//2+107},441,1", os.path.join(TEMP_DIR, "temp.png")])
-        im_bar = Image.open(os.path.join(TEMP_DIR, "temp.png"))
+        # subprocess.run(["screencapture", "-x", "-R" f"{x0//2+306},{y0//2+107},441,1", os.path.join(TEMP_DIR, "temp.png")])
+        # im_bar = Image.open(os.path.join(TEMP_DIR, "temp.png"))
+        im_bar = screenshot(region=(x0+612, y0+214, 882, 1))[:, :, ::-1]
         dark_color_gray = 70
         bright_color_gray = 165
         n_dark = 10  # number of consecutive dark pixels to determine current position
@@ -109,19 +102,19 @@ def check_status(prev_status, fish_type="yellow"):
         return PULLING, box
     box = check(READY, confidence=0.99)
     if box:
-        if prev_status != WAITING:
+        if prev_status not in [WAITING, BONUS_NOT_REACHED]:
             log(f"fish up, check took {time.time() - t0:.2f} seconds.")
         fish_type_coords = (x0 + FISH_TYPE_X_COORD[fish_type], y0 + FISH_TYPE_Y_COORD)
         if pixel_match_color(*fish_type_coords, FISH_TYPE_COLOR, FISH_TYPE_X_COORD_TOLERANCE) or fish_type == "white":
             if prev_status != READY:
                 log(f"ready to fish, check took {time.time() - t0:.2f} seconds.")
             return READY, box
-        if prev_status != WAITING:
+        if prev_status not in [WAITING, BONUS_NOT_REACHED]:
             log(f"bonus did not reach yellow, check took {time.time() - t0:.2f} seconds.")
-        return WAITING, box
+        return BONUS_NOT_REACHED, box
     box = check(WAITING, confidence=0.99)
     if box:
-        if prev_status != WAITING:
+        if prev_status not in [WAITING, BONUS_NOT_REACHED]:
             log(f"waiting for fish, check took {time.time() - t0:.2f} seconds.")
         return WAITING, box
     box = check(STANDBY, confidence=0.8)
@@ -146,6 +139,7 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
     last_pickup_time = time.time()
     fishing_attempted = 0
     n_standby_cont = 0
+    last_fish_up_time = 0  # fish up but bonus did not reach yellow. need to wait some time before trying again.
     activate_diablo()
     while fishing_attempted < 30 and n_standby_cont < 3:
         if stop():
@@ -160,7 +154,6 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
                 if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
             continue
-
         if status == INTERRUPTED_PARTY or status == INTERRUPTED_LAIR or status == INTERRUPTED_RAID:
             activate_diablo()
             click_box(box)
@@ -183,7 +176,7 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
                 n_standby_cont = 1
             p.sleep(1)
             log(f"number of fishing attempts: {fishing_attempted}")
-        elif status == READY:
+        elif status == READY and time.time() - last_fish_up_time > 10:
             activate_diablo()
             p.sleep(0.1)
             click_box(box)
@@ -194,6 +187,8 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
             while time.time() - t < MAX_FISHING_TIME and time.time() - bar_or_bounds_not_found_time < MAX_TIMEOUT:
                 if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
+        elif status == BONUS_NOT_REACHED:
+            last_fish_up_time = time.time()
         elif status == WAITING and sys.platform == "win32" and pickup_attempted < PICKUP_LIMIT:
             last_pickup_time = time.time()
             if pickup_win32(pickup_attempted):
@@ -262,7 +257,7 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             walk(key_to_npc, 0.05)
         elif stage == "back":
             walk(key_to_fish)
-        p.sleep(1)
+        p.sleep(2)
 
 
 def trade_fish():
@@ -405,14 +400,14 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
     if stop is None:
         def stop():
             return False
-    if tries == 0:
-        return False
+    # if tries == 0:
+    #     return False
     stuck_count = 0
     activate_diablo()
 
     stage = "opening_map"
     prev_stage = ""
-    destination = "bs"  # blacksmith or fish
+    destination = "bs" if tries > 0 else "fish"  # blacksmith or fish
     t = 0
     minimap_box = Box(x0 + 1700, y0 + 100, 250, 180) if sys.platform == "darwin" else Box(1620, 10, 220, 150)
     npc_box = None
@@ -434,6 +429,7 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 stage = "find_npc"
             else:
                 click_box(minimap_box)
+                p.sleep(2)
         elif stage == "find_npc":
             box = check(f"icon_{destination}", region_boarder_y=600)
             if box:
@@ -450,12 +446,14 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 stage = "navigating"
                 t = time.time()
         elif stage == "navigating":
-            p.sleep(5)
+            p.sleep(2)
             # new_npc_box = find_npc_2(im_data[f"npc_{destination}"])
             new_npc_box = find_npc_3(destination)
             if npc_box and new_npc_box:
                 if match_box(npc_box, new_npc_box):
                     stage = "reached_npc"
+                    if sys.platform == "win32":
+                        boxes.update({f"npc_{destination}": new_npc_box})  # test save npc box
             npc_box = new_npc_box
         elif stage == "reached_npc":
             if destination == "bs":
@@ -463,18 +461,29 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 destination = "fish"
             else:  # back to fish
                 if sys.platform == "win32":
-                    log(f"debug: {location}")
-                    # DIKeys.press(KEY_MOVE.get("location"), 0.3)
-                    p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
+                    DIKeys.press(KEY_MOVE.get(location), 0.5)
+                    # p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
                 return True
-        elif stage == "salv":
+        elif stage == "npc_name_not_found":
+            if destination == "bs" and (sys.platform == "darwin" or boxes.get("npc_bs")):
+                stage = "salv_without_box"
+                destination = "fish"
+            elif destination == "fish":
+                if sys.platform == "win32":
+                    p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
+                log("Fisher npc not found, possibly blocked by other players. Assuming it reached Fisher npc.")
+                return True
+        elif stage == "salv" or stage == "salv_without_box":
             if sys.platform == "darwin":
                 box = check(TALK)
                 if box:
                     click_box(box)
                     stage = "dialog_bs"
             else:
-                click_center(npc_box)
+                if stage == "salv":
+                    click_center(npc_box)
+                else:
+                    click_center(boxes.get("npc_bs"))  # test using saved box
                 stage = "dialog_bs"
         elif stage == "dialog_bs":
             box = check("services")
@@ -503,26 +512,43 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
             if box:
                 click_box(box)
                 stage = "opening_map"
-
         if prev_stage == stage and stage != "navigating":
             stuck_count += 1
         elif prev_stage != stage:
             stuck_count = 0
         elif stage == "navigating" and time.time() - t > navigation_time_limit:
-            stuck_count = stuck_limit + 1
+            if tries > 1:
+                stuck_count = stuck_limit + 1
+            else:
+                stage = "npc_name_not_found"
         prev_stage = stage
         # log(stuck_count)
         log(stage)
         if stuck_count > stuck_limit:
             log(f"salvage got stuck at stage: {stage}, tries left: {tries}")
-            if sys.platform == "darwin":
-                p.press("space")
-            else:
-                p.click(960, 1000)
-            p.sleep(0.5)
-            cross_box = check("x", confidence=0.8)
-            if cross_box:
-                click_box(cross_box)
+            while not check("icon_bag"):  # improved logic of returning to normal game screen
+                if sys.platform == "darwin":
+                    cross_box = check("x", confidence=0.8)
+                    if cross_box:
+                        click_box(cross_box)
+                    else:
+                        p.press("space")
+                else:
+                    DIKeys.press(hexKeyMap.DIK_ESCAPE)
+                p.sleep(3)
+            # cross_box = check("x", confidence=0.8)
+            # if cross_box:
+            #     click_box(cross_box)
+            # p.sleep(0.5)
+            # if sys.platform == "darwin":
+            #     p.press("space")
+            # else:
+            #     p.click(960, 1000)
+            # for _ in range(2):
+            #     p.sleep(1)
+            #     cross_box = check("x", confidence=0.8)
+            #     if cross_box:
+            #         click_box(cross_box)
             return salvage(location, tries=tries - 1)
         p.sleep(1)
 
@@ -543,9 +569,10 @@ def check_bag_capacity():
             return None
         if sys.platform == "darwin":
             total_h = 76
-            subprocess.run(["screencapture", "-x", "-R" f"{x0//2+855},{y0//2+645},1,{total_h//2}",
-                            os.path.join(TEMP_DIR, "bag_cap.png")])
-            im = Image.open(os.path.join(TEMP_DIR, "bag_cap.png"))
+            # subprocess.run(["screencapture", "-x", "-R" f"{x0//2+855},{y0//2+645},1,{total_h//2}",
+            #                 os.path.join(TEMP_DIR, "bag_cap.png")])
+            # im = Image.open(os.path.join(TEMP_DIR, "bag_cap.png"))
+            im = screenshot(region=(x0 + 1710, y0 + 1290, 1, total_h))[:, :, ::-1]
         else:
             total_h = 70
             im = screenshot(region=(1560, 947, 1, total_h))
@@ -578,6 +605,8 @@ def trade(location):
         trade_with_gui()
         if location == "ashwold":
             DIKeys.press(hexKeyMap.DIK_W, 1.0)
+        else:
+            DIKeys.press(hexKeyMap.DIK_S, 0.5)
 
 
 def fish_and_trade(location, fish_type, fish_key, auto_salv, salv_capacity, brightness=50, stop=None):
@@ -601,12 +630,11 @@ def fish_and_trade(location, fish_type, fish_key, auto_salv, salv_capacity, brig
                         log("Failed to salvage.")
                         # alert salvage failure?
                 p.sleep(1)
-
         trade(location)
         p.sleep(1)
 
 
-def auto_fishing(location, fish_type, fish_key=None, auto_salv=False, salv_capacity=20, brightness=50, stop=None):
+def auto_fishing(location, fish_type, fish_key=None, auto_salv=False, salv_capacity=25, brightness=50, stop=None):
     if stop is None:
         def stop():
             return False

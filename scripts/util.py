@@ -20,7 +20,8 @@ RESOURCES_DIR = os.path.join(DIR, "resources")
 TEMP_DIR = os.path.join(DIR, "temp_im")
 
 STANDBY = 's'           # not in fishing state
-WAITING = 'w'           # fishing pre-stage 1, waiting for bonus rate hit yellow and fish bite
+WAITING = 'w'           # fishing pre-stage 1, waiting for fish bite
+BONUS_NOT_REACHED = 'b' # bonus rate not hit yellow
 READY = 'r'             # fishing pre-stage 3, ready to fish
 PULLING = 'p'           # fishing main stage, pulling fish up
 INTERRUPTED_LAIR = 'l'  # interrupted by lair auto navigation
@@ -67,11 +68,21 @@ im_data = {
 
 FISH_TYPE_COLOR = (125, 125, 120)
 FISH_TYPE_X_COORD_TOLERANCE = 100
+TESSERACT_CONFIG = "-c tessedit_char_whitelist=aBceFhlkimrst"
+if os.path.exists("../resources/tesseract_path.txt"):
+    with open("../resources/tesseract_path.txt", 'r') as f:
+        path_ = f.readline().strip().replace("\\", "/")
+        if path_.endswith(".exe"):
+            TESSERACT_PATH_WIN32 = path_
+        else:
+            TESSERACT_PATH_WIN32 = os.path.join(path_, "tesseract.exe")
+else:
+    TESSERACT_PATH_WIN32 = "C:/Program Files/Tesseract-OCR/tesseract.exe"
 
 if sys.platform == 'darwin':
     from locate_im import locate_on_screen, pixel_match_color, screenshot, locate
     import subprocess
-    FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1050}
+    FISH_TYPE_X_COORD = {"white": 0, "blue": 910, "yellow": 1047}
     FISH_TYPE_Y_COORD = 137
     MAX_FISHING_TIME = 20
     MAX_TIMEOUT = 2
@@ -199,6 +210,8 @@ def scroll_down(x, y, amount=200):
         p.sleep(0.1)
         p.drag(yOffset=-amount, duration=0.3 + 0.2 * random.random(), button='left')
     else:
+        p.moveTo(x, y)
+        p.sleep(0.1)
         p.scroll(-1, x=x, y=y)
 
 
@@ -228,7 +241,8 @@ def click_center(box):
 def find_npc(npc_color_rgb=np.array(NPC_NAME_COLOR)):
     im = p.screenshot()
     matches = np.argwhere((np.abs(np.array(im)[:, :, :3] - npc_color_rgb) <= 5).all(axis=2))
-    if matches.shape[0] > 50:
+    print(matches.shape)
+    if matches.shape[0] > 20:
         position = np.median(matches, axis=0)[::-1]
         return int(position[0]), int(position[1])
 
@@ -249,15 +263,15 @@ def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):
     im_array = extract_color_from_screen(npc_color_rgb)
     # from PIL import Image
     # Image.fromarray(im_array[:,:,::-1]).save("npc_im_black.png")
-    return locate(npc_name_im, im_array, confidence=0.6)
+    return locate(npc_name_im, im_array, confidence=0.5)
 
 
-def find_npc_3(npc_name, npc_color_rgb=np.array(NPC_NAME_COLOR)):
+def find_npc_3(npc_name, npc_color_rgb=np.array(NPC_NAME_COLOR), config=TESSERACT_CONFIG, tesseract_path=TESSERACT_PATH_WIN32):
     full_name = {"fish": "Fisher", "bs": "Blacksmith"}[npc_name]
     im_array = extract_color_from_screen(npc_color_rgb)
-    config = "-c tessedit_char_whitelist=aBceFhlkimrst"
+    # config = "-c tessedit_char_whitelist=aBceFhlkimrst"
     if sys.platform == "win32":
-        pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+        pytesseract.tesseract_cmd = tesseract_path
     try:
         outputs = pytesseract.image_to_data(im_array, config=config, output_type=pytesseract.Output.DICT)
         print(outputs)

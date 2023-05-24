@@ -348,11 +348,9 @@ def trade_with_gui(attempts_trade=3, attempts_sell=3):
         p.sleep(1)
         DIKeys.press(hexKeyMap.DIK_Q)
         p.sleep(0.1)
-        DIKeys.press(hexKeyMap.DIK_A, 0.5)
-        p.sleep(0.1)
         DIKeys.press(hexKeyMap.DIK_D, 1)
         p.sleep(0.1)
-        DIKeys.press(hexKeyMap.DIK_A, 0.5)
+        DIKeys.press(hexKeyMap.DIK_A, 1)
     return 0
 
 
@@ -604,9 +602,13 @@ def trade(location):
     else:
         trade_with_gui()
         if location == "ashwold":
-            DIKeys.press(hexKeyMap.DIK_W, 1.0)
+            DIKeys.press(hexKeyMap.DIK_D, 0.5)
+            DIKeys.press(hexKeyMap.DIK_W, 1.5)
+        elif location == "bilefen":
+            DIKeys.press(hexKeyMap.DIK_A, 0.05)
         else:
-            DIKeys.press(hexKeyMap.DIK_S, 0.5)
+            DIKeys.press(hexKeyMap.DIK_D, 0.05)
+
 
 
 def fish_and_trade(location, fish_type, fish_key, auto_salv, salv_capacity, brightness=50, stop=None):

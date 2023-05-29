@@ -66,7 +66,7 @@ im_data = {
     "icon_bag":         os.path.join(RESOURCES_DIR, "icon_bag.png")
 }
 
-FISH_TYPE_COLOR = (125, 125, 120)
+FISH_TYPE_COLOR = (125, 125, 100)
 FISH_TYPE_X_COORD_TOLERANCE = 100
 TESSERACT_CONFIG = "-c tessedit_char_whitelist=aBceFhlkimrst"
 if os.path.exists("../resources/tesseract_path.txt"):
@@ -147,7 +147,10 @@ def clear_temp_screenshots():
 
 def activate_diablo():
     if sys.platform == "darwin":
-        subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
+        result = subprocess.run(["osascript", "get_active_window.scpt"], stdout=subprocess.PIPE)
+        if result.stdout.decode("utf-8").strip() != "Immortal":
+            subprocess.run(["osascript", "-e", 'tell application "Diablo Immortal" to activate'])
+            p.sleep(0.3)
     else:
         window.activate()
 
@@ -176,15 +179,18 @@ def cast_fishing_rod(key, box):
         DIKeys.press(hexKeyMap.DI_KEYS[key])
 
 
-def check(status, confidence=0.85, region_boarder_x=20, region_boarder_y=20):
+def check(status, confidence=0.85, region_boarder_x=20, region_boarder_y=20, region_bypass=False):
     if sys.platform == "win32" and status in [TALK, PICK]:
         return None
     global boxes
     global regions
     im_name = im_data[status]
-    region = regions.get(status)
+    if region_bypass:
+        region = None
+    else:
+        region = regions.get(status)
     box = locate_on_screen(im_name, region=region, confidence=confidence)
-    if sys.platform == "win32" and box:
+    if sys.platform == "win32" and box and not region_bypass:
         if status not in boxes:
             boxes.update({status: box})
         if status not in regions:

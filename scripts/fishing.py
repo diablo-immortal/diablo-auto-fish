@@ -101,7 +101,7 @@ def check_status(prev_status, fish_type="yellow"):
             log(f"pulling fish, check took {time.time() - t0:.2f} seconds.")
         return PULLING, box
     box = check(READY, confidence=0.99)
-    if box:
+    if box and (sys.platform == "darwin" or not image_is_gray(screenshot(region=box))):
         if prev_status not in [WAITING, BONUS_NOT_REACHED]:
             log(f"fish up, check took {time.time() - t0:.2f} seconds.")
         fish_type_coords = (x0 + FISH_TYPE_X_COORD[fish_type], y0 + FISH_TYPE_Y_COORD)
@@ -113,7 +113,7 @@ def check_status(prev_status, fish_type="yellow"):
             log(f"bonus did not reach yellow, check took {time.time() - t0:.2f} seconds.")
         return BONUS_NOT_REACHED, box
     box = check(WAITING, confidence=0.99)
-    if box:
+    if box and (sys.platform == "darwin" or image_is_gray(screenshot(region=box))):
         if prev_status not in [WAITING, BONUS_NOT_REACHED]:
             log(f"waiting for fish, check took {time.time() - t0:.2f} seconds.")
         return WAITING, box
@@ -244,6 +244,8 @@ def trade_fish_buy_bait_go_back(key_to_npc, key_to_fish):
             p.sleep(1)
         elif status == TALK and stage == "buy":
             buy_bait()
+            p.sleep(0.5)
+            walk('d', 0.02)
             stage = "back"
         elif status == STANDBY and stage == "back":
             return 0
@@ -459,7 +461,7 @@ def salvage(location, tries=3, stuck_limit=30, navigation_time_limit=60, stop=No
                 destination = "fish"
             else:  # back to fish
                 if sys.platform == "win32":
-                    DIKeys.press(KEY_MOVE.get(location), 0.5)
+                    DIKeys.press(KEY_MOVE.get(location), 0.3)
                     # p.click(BACK_TO_FISHING_COORD[location], button=p.MIDDLE)  # test: trying to go to the ideal spot
                 return True
         elif stage == "npc_name_not_found":

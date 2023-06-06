@@ -179,6 +179,10 @@ def cast_fishing_rod(key, box):
         DIKeys.press(hexKeyMap.DI_KEYS[key])
 
 
+def image_is_gray(image, threshold=5):
+    return (np.abs(np.diff(np.array(image)[:, :, :3], axis=2)) < threshold).all()  # gray if R,G,B are all the same
+
+
 def check(status, confidence=0.85, region_boarder_x=20, region_boarder_y=20, region_bypass=False):
     if sys.platform == "win32" and status in [TALK, PICK]:
         return None

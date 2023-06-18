@@ -167,6 +167,12 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
             else:
                 # click_box(box, button=p.SECONDARY)
                 cast_fishing_rod(fish_key, box)
+                p.moveTo(box.left, box.top)
+                if fishing_attempted == 0:
+                    p.sleep(0.5)
+                    for _ in range(10):
+                        DIKeys.press(hexKeyMap.DIK_E, 0.01)
+                        p.sleep(round(0.05 + random.random() * 0.1, 1))
             fishing_attempted += 1
             if time.time() - last_pickup_time > 600:
                 pickup_attempted = 0
@@ -187,10 +193,16 @@ def fish(fish_type="yellow", fish_key='5', brightness=50, stop=None):
             while time.time() - t < MAX_FISHING_TIME and time.time() - bar_or_bounds_not_found_time < MAX_TIMEOUT:
                 if pull(brightness):  # successful pull
                     bar_or_bounds_not_found_time = time.time()
+            if sys.platform == "win32":
+                p.moveTo(find_npc() or (960, 540))
         elif status == BONUS_NOT_REACHED:
             last_fish_up_time = time.time()
         elif status == WAITING and sys.platform == "win32" and pickup_attempted < PICKUP_LIMIT:
+            log("pick up items...")
             last_pickup_time = time.time()
+            for _ in range(15):
+                DIKeys.press(hexKeyMap.DIK_E, 0.01)
+                p.sleep(round(0.05 + random.random() * 0.1, 1))
             if pickup_win32(pickup_attempted):
                 pickup_attempted += 1
             else:

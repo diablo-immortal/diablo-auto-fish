@@ -145,6 +145,12 @@ def clear_temp_screenshots():
         os.mkdir(TEMP_DIR)
 
 
+def reset_game_ui_positions():
+    file_path = os.path.join(RESOURCES_DIR, "regions.json")
+    if os.path.exists(file_path):
+        os.unlink(file_path)
+
+
 def activate_diablo():
     if sys.platform == "darwin":
         result = subprocess.run(["osascript", "get_active_window.scpt"], stdout=subprocess.PIPE)
@@ -198,8 +204,8 @@ def check(status, confidence=0.85, region_boarder_x=20, region_boarder_y=20, reg
         if status not in boxes:
             boxes.update({status: box})
         if status not in regions:
-            regions.update({status: [int(n) for n in [box.left - region_boarder_x,
-                                                      box.top - region_boarder_y,
+            regions.update({status: [int(n) for n in [max(0, box.left - region_boarder_x),
+                                                      max(0, box.top - region_boarder_y),
                                                       box.width + 2 * region_boarder_x,
                                                       box.height + 2 * region_boarder_y]]})
             with open(os.path.join(RESOURCES_DIR, "regions.json"), 'w') as f:
@@ -254,7 +260,7 @@ def find_npc(npc_color_rgb=np.array(NPC_NAME_COLOR)):
     print(matches.shape)
     if matches.shape[0] > 20:
         position = np.median(matches, axis=0)[::-1]
-        return int(position[0]), int(position[1])
+        return int(position[0]), int(position[1]) + 20
 
 
 def find_npc_2(npc_name_im, npc_color_rgb=np.array(NPC_NAME_COLOR)):
@@ -287,7 +293,7 @@ def find_npc_3(npc_name, npc_color_rgb=np.array(NPC_NAME_COLOR), config=TESSERAC
         print(outputs)
         if full_name in outputs["text"]:
             i_row = outputs["text"].index(full_name)
-            return Box(outputs["left"][i_row], outputs["top"][i_row], outputs["width"][i_row], outputs["height"][i_row])
+            return Box(outputs["left"][i_row], outputs["top"][i_row] + 20, outputs["width"][i_row], outputs["height"][i_row])
     except pytesseract.TesseractNotFoundError:
         log("Tesseract not installed. Follow the instruction on the project homepage.")
         return locate(im_data[f"npc_{npc_name}"], im_array, confidence=0.5)

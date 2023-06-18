@@ -83,11 +83,11 @@ class GUI(tk.Tk):
 
         self.auto_fish_button = tk.Button(self, text="Auto Fishing", width=15, justify=tk.CENTER)
         self.trade_button = tk.Button(self, text="Trade Fish", width=15, justify=tk.CENTER)
-        self.fish_button = tk.Button(self, text="Fish 1 Round", width=15, justify=tk.CENTER)
+        self.reset_button = tk.Button(self, text="Reset Cache", width=15, justify=tk.CENTER)
         self.salv_button = tk.Button(self, text="Auto Salvage", width=15, justify=tk.CENTER)
         self.auto_fish_button.grid(row=11, column=0, padx=10, pady=10, sticky=tk.W)
         self.trade_button.grid(row=11, column=1, padx=10, pady=10, sticky=tk.W)
-        self.fish_button.grid(row=11, column=2, padx=10, pady=10, sticky=tk.W)
+        self.reset_button.grid(row=11, column=2, padx=10, pady=10, sticky=tk.W)
         self.salv_button.grid(row=12, column=0, padx=10, pady=10, sticky=tk.W)
 
     def get_fishing_key(self, allowed_keys):

@@ -682,7 +682,7 @@ if __name__ == '__main__':
             root.thread = threading.Thread(target=auto_fishing, args=args, daemon=True)
             root.thread.start()
             root.auto_fish_button.config(text="Stop Fishing", command=lambda: stop_auto_fishing())
-            root.fish_button["state"] = "disabled"
+            root.reset_button["state"] = "disabled"
             root.trade_button["state"] = "disabled"
             root.salv_button["state"] = 'disabled'
 
@@ -690,30 +690,30 @@ if __name__ == '__main__':
             root.not_fishing = True
             root.thread.join()
             root.auto_fish_button.config(text="Auto Fishing", command=lambda: start_auto_fishing())
-            root.fish_button["state"] = "normal"
+            root.reset_button["state"] = "normal"
             root.trade_button["state"] = "normal"
             root.salv_button["state"] = "normal"
 
-        def start_fishing():
-            root.not_fishing = False
-            # fish_key_bind = root.fish_key_bind.get()
-            # if fish_key_bind == "other":
-            #     fish_key_bind = root.fish_key_bind_other.get().lower()
-            args = (root.type_var.get(), root.get_fishing_key(hexKeyMap.DI_KEYS), root.bright_var.get(), lambda: root.not_fishing)
-            root.thread = threading.Thread(target=fish, args=args, daemon=True)
-            root.thread.start()
-            root.fish_button.config(text="Stop Fishing", command=lambda: stop_fishing())
-            root.auto_fish_button["state"] = "disabled"
-            root.trade_button["state"] = "disabled"
-            root.salv_button["state"] = 'disabled'
-
-        def stop_fishing():
-            root.not_fishing = True
-            root.thread.join()
-            root.fish_button.config(text="Fish 1 Round", command=lambda: start_fishing())
-            root.auto_fish_button["state"] = "normal"
-            root.trade_button["state"] = "normal"
-            root.salv_button["state"] = "normal"
+        # def start_fishing():
+        #     root.not_fishing = False
+        #     # fish_key_bind = root.fish_key_bind.get()
+        #     # if fish_key_bind == "other":
+        #     #     fish_key_bind = root.fish_key_bind_other.get().lower()
+        #     args = (root.type_var.get(), root.get_fishing_key(hexKeyMap.DI_KEYS), root.bright_var.get(), lambda: root.not_fishing)
+        #     root.thread = threading.Thread(target=fish, args=args, daemon=True)
+        #     root.thread.start()
+        #     root.reset_button.config(text="Stop Fishing", command=lambda: stop_fishing())
+        #     root.auto_fish_button["state"] = "disabled"
+        #     root.trade_button["state"] = "disabled"
+        #     root.salv_button["state"] = 'disabled'
+        #
+        # def stop_fishing():
+        #     root.not_fishing = True
+        #     root.thread.join()
+        #     root.reset_button.config(text="Fish 1 Round", command=lambda: start_fishing())
+        #     root.auto_fish_button["state"] = "normal"
+        #     root.trade_button["state"] = "normal"
+        #     root.salv_button["state"] = "normal"
 
         def auto_salv():
             root.not_fishing = False
@@ -723,7 +723,7 @@ if __name__ == '__main__':
             root.salv_button.config(text="Stop Salvaging", command=lambda: stop_salv())
             root.auto_fish_button["state"] = "disabled"
             root.trade_button["state"] = "disabled"
-            root.fish_button["state"] = "disabled"
+            root.reset_button["state"] = "disabled"
 
         def stop_salv():
             root.not_fishing = True
@@ -731,13 +731,13 @@ if __name__ == '__main__':
             root.salv_button.config(text="Auto Salvage", command=lambda: auto_salv())
             root.auto_fish_button["state"] = "normal"
             root.trade_button["state"] = "normal"
-            root.fish_button["state"] = "normal"
+            root.reset_button["state"] = "normal"
 
         # def log(contents):
         #     root.log_text.insert('end', f"[{datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')}] {contents}\n")
         #     root.log_text.see('end')
 
-        root.fish_button.config(command=lambda: start_fishing())
+        root.reset_button.config(command=lambda: reset_game_ui_positions())
         root.trade_button.config(command=lambda: trade(root.loc_var.get()))
         root.auto_fish_button.config(command=lambda: start_auto_fishing())
         root.salv_button.config(command=lambda: auto_salv())
